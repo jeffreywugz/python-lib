@@ -88,8 +88,11 @@ def parse_cmd_args(args):
     return list_args, kw_args
 
 def run_cmd(env, args):
-    list_args, kw_args = cmd_args_parse(args)
-    func = list_args[0]
+    list_args, kw_args = parse_cmd_args(args)
+    try:
+        func = list_args[0]
+    except exceptions.IndexError:
+        raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
     if not callable(func): raise merr.GErr("not callable", func)
     return func(*list_args[1:], **kw_args)
@@ -124,3 +127,6 @@ def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
     
+def gen_name(*parts):
+    return '.'.join(parts)
+

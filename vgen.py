@@ -2,7 +2,7 @@
 
 import sys, os
 cwd = os.path.dirname(os.path.abspath(__file__))
-import common
+from common import *
 import shell
 import algo
 from mako.template import Template
