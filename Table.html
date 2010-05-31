@@ -1,0 +1,19 @@
+<table border="1" width="100%">
+  <tr> <td></td>
+  %for col in cols:
+  <td style="background: black; color: white; font-weight: bold;">${col}</td>
+  %endfor
+  </tr>
+  
+  %for row in rows:
+  <tr>
+    <td style="background: black; color: white; font-weight: bold;">${row}</td>
+    %for col in cols:
+    <td>
+      <pre>${cell_maker(row, col)}</pre>
+    </td>
+    %endfor
+  </tr>
+  %endfor
+</table>
+

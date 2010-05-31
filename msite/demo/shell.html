@@ -1,0 +1,30 @@
+<%!
+   import exceptions
+   import pprint
+   def pformat(obj):
+       return pprint.pformat(obj, indent=4)
+%>
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="/css/main.css"/>
+  </head>
+  <script language="JavaScript">
+function shell_focus(field) {
+       document.shell.expr.focus();
+       document.shell.expr.select();
+}
+  </script>
+  <body onload="shell_focus()">
+      <form name="shell" action="/msh" method="get">
+        <input type="text" class="input" name="expr" value="${expr}">
+        <input type="submit" value="execute">
+      </form>
+    <div class="output">
+    % if exception:
+    <pre class="error">${"%s\n%s"%(exception, traceback)}</pre>
+    % else:
+    <pre>${pformat(result)}</pre>
+    % endif
+    </div>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+from lm import *
+import sys
+
+# lm = LazyMan()
+# cprj_setup(lm, 'butterflies')
+
+# lm.add(
+#     StaticRule('default', action='echo $out'),
+#     StaticRule('clean', action='rm -rf $out *.o'),
+#     )
+
+# lm.do_task(sys.argv[1:])
+
