@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys, os
-cwd = os.path.dirname(os.path.abspath(__file__))
+cwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.extend([os.path.join(cwd, '..')])
 from common import *
 import algo, shell, vgen
