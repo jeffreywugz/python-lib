@@ -4,6 +4,8 @@ lib_paths = ['.', 'lib/mako.zip', 'lib/simplejson.zip', 'lib/cherrypy.zip']
 sys.path.extend([os.path.join(my_lib_dir, path) for path in lib_paths])
 import exceptions
 import subprocess
+import time
+import string
 
 class GErr(exceptions.Exception):
     def __init__(self, msg, obj=None):

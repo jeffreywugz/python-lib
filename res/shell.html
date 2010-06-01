@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <title>${workdir}$ ${cmd}</title>
+    <style type="text/css">
+      .input {
+          width: 100%;
+          font-size: 90%; 
+          font-family: courier, monospace;
+          font-weight: bold;
+          background-color: #FFFFFF;
+          color: #000000;
+      }
+      .error {
+          font-size: 100%;
+          color: #FF0000;
+      }
+      .output {
+          overflow:auto;
+          background-color: #F3F5F7;
+          color: #000000;
+          font-family: courier, monospace;
+          font-size: 90%;
+      }
+      </style>
+      <script language="JavaScript">
+    function input_focus() {
+    document.shell.cmd.focus();
+    document.shell.cmd.select();
+    }
+      </script>
+  </head>
+  <body onload="input_focus()">
+    <form name="shell" action="" method="get">
+      <input type="text" class="input" name="cmd" value="${cmd}">
+      <input type="text" class="input" name="workdir" value="${workdir}">
+        <input type="submit" value="execute">
+        </form>
+        <div class="output">
+          <pre id="shell_error" class="error">${stderr}</pre>
+          <pre id="shell_output" class="output">${stdout}</pre>
+        </div>
+      </body>
+    </html>

@@ -8,10 +8,10 @@ import algo
 from mako.template import Template
 
 def is_image(name):
-    return mos.get_ext(name) in ['png', 'gif', 'jpg']
+    return shell.get_ext(name) in ['png', 'gif', 'jpg']
 
 def is_embed(name):
-    return mos.get_ext(name) in ['svg', 'swf']
+    return shell.get_ext(name) in ['svg', 'swf']
     
 def file_view(name):
     if is_embed(name):
@@ -19,7 +19,7 @@ def file_view(name):
     elif is_image(name):
         return '<img src="%s" alt="%s"/>'%(name, "image not found!")
     else:
-        return mstore.safe_read(name)
+        return safe_read(name)
 
 def render_list(objs, *cols):
     list_template = os.path.join(cwd, 'res', 'List.html')

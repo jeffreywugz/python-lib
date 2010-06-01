@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-from util import *
+from common import *
 import os
 from subprocess import *
 
 success_target = '<success_target>'
 
-class LMException(Exception):
+class LMException(exceptions.Exception):
     def __init__(self, msg, obj):
         self.msg, self.obj = msg, obj
     
@@ -20,8 +20,7 @@ class Rule:
     def __init__(self, target=None, depends=None, action=None):
         self.target, self.depends, self.action = target, depends, action
         if type(self.action) == str: self.action = [self.action]
-        if type(self.depends) == str:
-            self.depends = [self.depends]
+        if type(self.depends) == str: self.depends = [self.depends]
 
     def get_deps(self, target):
         return None

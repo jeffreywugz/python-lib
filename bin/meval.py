@@ -2,8 +2,9 @@
 
 import sys, os
 cwd = os.path.dirname(os.path.abspath(__file__))
-sys.path.extend([cwd])
+sys.path.extend([os.path.join(cwd, '..')])
 from common import *
+import algo, shell, vgen
 
 def get_default_tasks():
     top_tasks = ['top.py', '../top.py', '../../top.py'] 
@@ -18,8 +19,15 @@ def get_default_tasks():
 
 def echo(*args, **kw_args):
     print 'args=%s, kw_args=%s'%(args, kw_args)
+
+def eval_expr(expr):
+    result = eval(expr)
+    print result
     
 tasks = get_default_tasks()
-[execfile(t, globals()) for t in tasks]
+print 'total tasks: %s'%tasks
+for t in tasks:
+    print 'load %s'%t
+    execfile(t, globals())
 run_cmd(locals(), sys.argv[1:])
     
