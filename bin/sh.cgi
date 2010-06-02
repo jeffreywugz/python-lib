@@ -2,7 +2,11 @@
 
 echo 'Content-Type: text/html'
 echo ''
-binfile=`readlink $0`
+if [ -L $0 ]; then
+    binfile=`readlink $0`;
+else
+    binfile=$0;
+fi
 bindir=`dirname $binfile`
 errorfile=/tmp/shell.cgi.error
 rm -rf $errorfile 2>&1
