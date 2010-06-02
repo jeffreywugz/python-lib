@@ -1,3 +1,6 @@
+import os, os.path
+from glob import glob
+
 def mkdir(dir):
     if not os.path.exists(dir): os.mkdir(dir)
 

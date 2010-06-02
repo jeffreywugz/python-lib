@@ -17,13 +17,6 @@ import simplejson as json
 import rpc
 safemime.init()
 
-class TemplateSet:
-    def __init__(self, base_dir):
-        self.base_dir = base_dir
-        
-    def render(self, file, **kw):
-        return Template(filename=os.path.join(self.base_dir, file)).render(**kw)
-        
 class Files:
     def __init__(self, base_dir='.'):
         self.base_dir = base_dir

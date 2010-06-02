@@ -6,6 +6,7 @@ import exceptions
 import subprocess
 import time
 import string
+from mako.template import Template
 
 class GErr(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -23,6 +24,13 @@ class Env(dict):
     def __getattr__(self, name):
         return self.get(name)
 
+class TemplateSet:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        
+    def render(self, file, **kw):
+        return Template(filename=os.path.join(self.base_dir, file)).render(**kw)
+        
 class BlockStream:
     tab_stop = '    '
     Debug, Info, Warning, Error = 1, 0, -1, -2

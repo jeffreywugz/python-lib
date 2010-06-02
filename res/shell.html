@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>${workdir}$ ${cmd}</title>
+    <title>[${workdir}]$ ${cmd}</title>
     <style type="text/css">
       .input {
           width: 100%;
@@ -31,8 +31,8 @@
   </head>
   <body onload="input_focus()">
     <form name="shell" action="" method="get">
-      <input type="text" class="input" name="cmd" value="${cmd}">
       <input type="text" class="input" name="workdir" value="${workdir}">
+      <input type="text" class="input" name="cmd" value="${cmd}">
         <input type="submit" value="execute">
         </form>
         <div class="output">
