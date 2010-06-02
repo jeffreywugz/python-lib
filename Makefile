@@ -5,4 +5,4 @@ test-vgen:
 test-meval:
 	me echo x=1 y=2 z
 clean:
-	rm *.pyc */*.pyc
+	rm -rf *.pyc */*.pyc

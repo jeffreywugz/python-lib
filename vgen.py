@@ -3,15 +3,14 @@
 import sys, os
 cwd = os.path.dirname(os.path.abspath(__file__))
 from common import *
-import shell
-import algo
+import shlib, algo
 from mako.template import Template
 
 def is_image(name):
-    return shell.get_ext(name) in ['png', 'gif', 'jpg']
+    return shlib.get_ext(name) in ['png', 'gif', 'jpg']
 
 def is_embed(name):
-    return shell.get_ext(name) in ['svg', 'swf']
+    return shlib.get_ext(name) in ['svg', 'swf']
     
 def file_view(name):
     if is_embed(name):

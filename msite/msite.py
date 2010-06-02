@@ -17,6 +17,13 @@ import simplejson as json
 import rpc
 safemime.init()
 
+class TemplateSet:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        
+    def render(self, file, **kw):
+        return Template(filename=os.path.join(self.base_dir, file)).render(**kw)
+        
 class Files:
     def __init__(self, base_dir='.'):
         self.base_dir = base_dir
@@ -100,12 +107,12 @@ class MsiteApp:
         '/m':{'tools.staticdir.on': True, 'tools.staticdir.dir': msite_path},
         '/':{'tools.sessions.on': True},
         }
-    def __init__(self, files_dir, rpc, py_env, extra_config={}):
-        self.fs = Files(files_dir)
+    def __init__(self, fs_dir='.', rpc=rpc.RpcDemo(), py_env=globals(), config={}):
+        self.fs = Files(fs_dir)
         self.tmp = Session()
         self.rpc = rpc
         self.sh = Shell(py_env)
-        self.config = self.merge_config(MsiteApp.config, extra_config)
+        self.config = self.merge_config(MsiteApp.config, config)
         cherrypy.tree.mount(self, '/', config=self.config)
         
     @cherrypy.expose

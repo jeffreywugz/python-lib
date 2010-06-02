@@ -4,7 +4,7 @@ import sys, os
 cwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.extend([os.path.join(cwd, '..')])
 from common import *
-import algo, shell, vgen
+import algo, shlib, vgen
 
 def get_default_tasks():
     top_tasks = ['top.py', '../top.py', '../../top.py'] 
