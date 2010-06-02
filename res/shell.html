@@ -31,13 +31,13 @@
   </head>
   <body onload="input_focus()">
     <form name="shell" action="" method="get">
-      <input type="text" class="input" name="workdir" value="${workdir}">
-      <input type="text" class="input" name="cmd" value="${cmd}">
-        <input type="submit" value="execute">
+      <input type="text" class="input" name="workdir" title="dir" style="width:35%" value="${workdir}">
+      <input type="text" class="input" name="cmd" style="width:50%" value="${cmd}">
+      <input type="submit" style="width:5%" value="execute">
         </form>
         <div class="output">
           <pre id="shell_error" class="error">${stderr}</pre>
-          <pre id="shell_output" class="output">${stdout}</pre>
+          <div id="shell_output" class="output">${stdout}</div>
         </div>
       </body>
     </html>

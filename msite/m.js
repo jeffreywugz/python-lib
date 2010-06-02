@@ -157,7 +157,7 @@ function shell(interp, panel, expr, result, error) {
 
 function catInterp(expr){ alert(expr); return expr; }
 function installShell(interp, panel, input, output, error){
-    var hotKeyManager = new HotKeyManager({'.': function(){input.focus();}, ',': function(){toggleVisible(panel)}});
+    var hotKeyManager = new HotKeyManager({'x': function(){input.focus();}, 'c': function(){toggleVisible(panel)}});
     hotKeyManager.install(top);
     input.addEventListener('keypress',
                            function(event){
