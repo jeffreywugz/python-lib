@@ -3,7 +3,7 @@
 import sys, os
 cwd = os.path.dirname(os.path.abspath(__file__))
 from common import *
-import shlib
+import funclib, shlib
 
 templates = TemplateSet(os.path.join(cwd, 'res'))
 
@@ -32,3 +32,8 @@ def render_table(cell_maker, rows, cols):
 
 def render_aggregation(items):
     return templates.render('Aggregation.html', items=items)
+
+class VisualDictSet(DictSet):
+    def __init__(self, ct, *args, **kw):
+        self.ct = ct
+        DictSet(self, *args, **kw)

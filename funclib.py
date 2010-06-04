@@ -43,14 +43,6 @@ def dcmul(*args):
 def dcmap(func, *args):
     list = dcmul(*args)
     return map(lambda x:func(*x), list)
-    
-def msub(template, **env):
-    old = ""
-    cur = template
-    while cur != old:
-        old = cur
-        cur = sub(cur, **env)
-    return cur
 
 class DictSet:
     def __init__(self, *args, **kw):
@@ -61,6 +53,7 @@ class DictSet:
             return [{k: v} for v in vs]
         single_key_dicts = [to_dicts(k, to_list(v)) for (k,v) in kw.items()]
         dicts = args + tuple(single_key_dicts)
+        dicts = map(to_list, dicts)
         self.dicts = dcmap(dmerge, *dicts)
 
     def query(self, **kw):
@@ -74,4 +67,4 @@ class DictSet:
     
     def __mul__(self, dicts):
         return DictSet(self.dicts, dicts)
-    
+
