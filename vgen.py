@@ -33,7 +33,3 @@ def render_table(cell_maker, rows, cols):
 def render_aggregation(items):
     return templates.render('Aggregation.html', items=items)
 
-class VisualDictSet(DictSet):
-    def __init__(self, ct, *args, **kw):
-        self.ct = ct
-        DictSet(self, *args, **kw)

@@ -63,7 +63,7 @@ class DictSet:
         map(lambda env: env.update(dmap(lambda v: v(**env), kw)), self.dicts)
 
     def map(self, func):
-        return dmap(func, self.dicts)
+        return map(lambda d:func(**d), self.dicts)
     
     def __mul__(self, dicts):
         return DictSet(self.dicts, dicts)
