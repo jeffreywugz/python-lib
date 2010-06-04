@@ -10,19 +10,25 @@ class VisualDictSet(DictSet):
         attr_values = filter(lambda x: x != None, attr_values)
         return sorted(list(set(attr_values)))
         
-    def list_view(self, *cols, **kw):
-        self.update(**kw)
-        full_cols = cols + tuple(kw.keys())
-        print vgen.render_list(self.dicts, *full_cols)
+    def list_view(self, *cols):
+        print vgen.render_list(self.dicts, *cols)
 
-    def table_view(self, target, row, col):
-        def select_target_field(row_value, col_value):
+    def make_cell_maker(self, row, col, func, multiple=False):
+        def cell_maker(row_value, col_value):
             result = self.query(**{col: col_value, row: row_value})
-            if len(result) == 1: return result[0]
-            return result
+            if multiple:
+                return func(*result)
+            else:
+                if len(result) == 0: return None
+                else: return func(**result[0])
+        return cell_maker
         
-        if callable(target): cell_maker = target
-        else: cell_maker = select_target_field
+    def table_view(self, target, row, col):
+        def default_cell_maker(**kw):
+            return kw[target]
+        
+        if callable(target): cell_maker = self.make_cell_maker(row, col, target)
+        else: cell_maker = self.make_cell_maker(row, col, default_cell_maker)
         
         rows = self.enum_attr_values(row)
         cols = self.enum_attr_values(col)
