@@ -76,7 +76,7 @@ class Shell:
             result = eval(expr, self.globals, {})
         except exceptions.Exception,e:
             exception = str(e)
-        return [result, exception, traceback.format_exc(10)]
+        return json.dumps([result, exception, traceback.format_exc(10)])
 
 
 class Session:

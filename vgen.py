@@ -3,8 +3,7 @@
 import sys, os
 cwd = os.path.dirname(os.path.abspath(__file__))
 from common import *
-import shlib, algo
-from mako.template import Template
+import shlib
 
 templates = TemplateSet(os.path.join(cwd, 'res'))
 
@@ -23,7 +22,7 @@ def file_view(name):
         return safe_read(name)
 
 def render(filename, **kw):
-    return templates.templates.render(filename, **kw)
+    return templates.render(filename, **kw)
 
 def render_list(objs, *cols):
     return templates.render('List.html', data=objs, cols=cols)
