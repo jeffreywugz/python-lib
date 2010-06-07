@@ -1,4 +1,5 @@
 import exceptions
+import re
 
 def gen_name(*parts):
     return '.'.join(parts)
@@ -18,3 +19,10 @@ def get_ext(name):
     index = name.rfind('.')
     if index == -1: return ""
     return name[index+1:].lower()
+
+def file_extract(f, pattern):
+    content = safe_read(f)
+    return re.search(pattern, content).groups()
+
+def mkdir(dir):
+    if not os.path.exists(dir): os.mkdir(dir)

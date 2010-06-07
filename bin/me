@@ -4,7 +4,6 @@ import sys, os
 cwd = os.path.dirname(os.path.realpath(__file__))
 sys.path.extend([os.path.join(cwd, '..')])
 from common import *
-import shlib, vgen
 
 def get_default_tasks():
     top_tasks = ['top.py', '../top.py', '../../top.py'] 
@@ -25,9 +24,9 @@ def eval_expr(expr):
     print result
     
 tasks = get_default_tasks()
-print 'total tasks: %s'%tasks
+# print 'total tasks: %s'%tasks
 for t in tasks:
-    print 'load %s'%t
+    # print 'load %s'%t
     execfile(t, globals())
-run_cmd(locals(), sys.argv[1:])
+print run_cmd(locals(), sys.argv[1:])
     

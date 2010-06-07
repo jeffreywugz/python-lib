@@ -1,4 +1,5 @@
 import sys, os
+my_lib_dir = os.path.dirname(os.path.abspath(__file__))
 import exceptions
 import subprocess
 import time
@@ -112,22 +113,28 @@ def run_cmd(env, args):
     except exceptions.IndexError:
         raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
-    if not callable(func): raise merr.GErr("not callable", func)
+    if not callable(func): raise GErr("not callable", func)
     return func(*list_args[1:], **kw_args)
 
 def shell(cmd):
-    print cmd
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
     return ret
 
 def popen(cmd):
-    print cmd
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
     err = p.stderr.read()
     out = p.stdout.read()
     if p.returncode != 0 or err:
-        raise merr.GErr('%s\n%s'%(err, out), cmd)
+        raise GErr('%s\n%s'%(err, out), cmd)
     return out
     
+def safe_popen(cmd):
+    try:
+        return popen(cmd)
+    except GErr,e:
+        return str(e)
+        
+
+core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))

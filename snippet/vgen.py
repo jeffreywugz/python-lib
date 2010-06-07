@@ -5,7 +5,6 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 from common import *
 import funclib, shlib
 
-templates = TemplateSet(os.path.join(cwd, 'res'))
 
 def is_image(name):
     return shlib.get_ext(name) in ['png', 'gif', 'jpg']

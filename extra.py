@@ -1,5 +1,4 @@
 from common import *
-import vgen
 
 class VisualDictSet(DictSet):
     def __init__(self, *args, **kw):
@@ -11,7 +10,7 @@ class VisualDictSet(DictSet):
         return sorted(list(set(attr_values)))
         
     def list_view(self, *cols):
-        print vgen.render_list(self.dicts, *cols)
+        print core_templates.render('List.html', data=self.dicts, cols=cols)
 
     def make_cell_maker(self, row, col, func, multiple=False):
         def cell_maker(row_value, col_value):
@@ -32,6 +31,22 @@ class VisualDictSet(DictSet):
         
         rows = self.enum_attr_values(row)
         cols = self.enum_attr_values(col)
-        print vgen.render_table(cell_maker, rows, cols)
+        print core_templates.render('Table.html', cell_maker=cell_maker, rows=rows, cols=cols)
         
 
+class MultiShell(VisualDictSet):
+    def __init__(self, *args, **kw):
+        VisualDictSet.__init__(self, *args, **kw)
+
+    def sub(self, *cmd, **kw):
+        dicts = self * kw
+        return dicts.map(lambda **env: msub(' '.join(cmd), **env))
+        
+    def run(self, *cmd, **kw):
+        map(shell, self.sub(*cmd, **kw))
+
+    def vrun(self, row, col, *cmd, **kw):
+        def cell_maker(**env):
+            env = dmerge(env, kw)
+            return safe_popen(msub(' '.join(cmd), **env))
+        self.table_view(target=cell_maker, row=row, col=col)

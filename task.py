@@ -9,7 +9,7 @@ def test_vgen():
     print numbers.list_view('x', 'y', 'product')
     print numbers.table_view(target=product, row='x', col='y')
     print numbers.table_view(target='product', row='x', col='y')
-    print vgen.render_aggregation(items)
+    print core_templates.render('Aggregation.html',items=items)
 
 def test_msite():
     app = MsiteApp('.', rpc.RpcDemo(), globals())
