@@ -1,4 +1,5 @@
 from common import *
+import urllib
 
 class VisualDictSet(DictSet):
     def __init__(self, *args, **kw):
@@ -51,10 +52,23 @@ class MultiShell(VisualDictSet):
             return safe_popen(msub(' '.join(cmd), **env))
         self.table_view(target=cell_maker, row=row, col=col)
 
-        
-class Wiki:
-    def __init__(self, base_dir):
-        self.base_dir = base_dir
 
-    def edit(self, file_name):
-        return core_templates.render('TextInput.html', action='', initial=safe_read(file_name))
+class UrlSet:
+    def __init__(self, base_url):
+        self.base_url = base_url
+
+    def gen_url(self, url, **kw):
+        return '%s/%s?%s'%(self.base_url, url, urllib.urlencode(kw))
+
+core_urls = UrlSet('/ans42/prj/python-lib/bin')
+
+
+class Wiki:
+    def __init__(self, dir):
+        self.dir = dir
+
+    def view(self, path):
+        path = os.path.realpath(os.path.join(self.dir, path))
+        views = [('view', core_urls.gen_url('sh.cgi', input_visibility='hidden', cmd='asciidoc --out-file=- %s'%path)),('edit', core_urls.gen_url('ed.cgi', path=path))]
+        print core_templates.render('tabs.html', views=views)
+

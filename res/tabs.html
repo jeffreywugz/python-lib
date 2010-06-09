@@ -9,5 +9,5 @@
         <a href="javascript:selectTab('${url}')">${name}</a>
         % endfor
         </h2>
-        <iframe width="100%" frameborder="0" scrolling="auto" src="${url}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
+        <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
       </div>

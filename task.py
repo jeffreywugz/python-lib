@@ -17,7 +17,5 @@ def test_container():
 def test_msite():
     app = MsiteApp('.', rpc.RpcDemo(), globals())
     app.run()
-    
-def test_wiki():
-    wiki = Wiki('.')
-    print wiki.edit(file_name='Readme.adoc')
+
+wiki = Wiki('.')

@@ -10,5 +10,6 @@ else
 fi
 bindir=`dirname $binfile`
 errorfile=/tmp/$file.cgi.error
-rm -rf $errorfile 2>&1
-$bindir/$file-cgi 2>$errorfile || (echo '<pre style="color:red">'; cat $errorfile; echo '</pre>')
+sudo -n -u ans42 rm -rf $errorfile 2>&1
+sudo -E -n -u ans42 bash -c "export HOME=/home/ans42; . /home/ans42/.bashrc; $bindir/$file-cgi 2>$errorfile" || (echo '<pre style="color:red">'; cat $errorfile; echo '</pre>')
+
