@@ -7,8 +7,8 @@
       function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
       function refresh(name){var frame = q(name + '.view'); frame.src = frame.src;}
       </script>
-    <div class="ItemList">
-      % for name, url in items:
+    <div class="panels">
+      % for name, url in views:
       <div>
         <h2>${name} <a href="javascript:toggleVisible(q('${name}'+'.view'))">Hide/Show</a> <a href="javascript:refresh('${name}')">Refresh</a> </h2>
         <iframe width="100%" frameborder="0" scrolling="auto" src="${url}" id="${name}.view" onload="resizeFrame(q('${name}.view'))"></iframe>

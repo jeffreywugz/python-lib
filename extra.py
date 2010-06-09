@@ -10,7 +10,7 @@ class VisualDictSet(DictSet):
         return sorted(list(set(attr_values)))
         
     def list_view(self, *cols):
-        print core_templates.render('List.html', data=self.dicts, cols=cols)
+        print core_templates.render('list.html', data=self.dicts, cols=cols)
 
     def make_cell_maker(self, row, col, func, multiple=False):
         def cell_maker(row_value, col_value):
@@ -31,7 +31,7 @@ class VisualDictSet(DictSet):
         
         rows = self.enum_attr_values(row)
         cols = self.enum_attr_values(col)
-        print core_templates.render('Table.html', cell_maker=cell_maker, rows=rows, cols=cols)
+        print core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
         
 
 class MultiShell(VisualDictSet):
@@ -50,3 +50,11 @@ class MultiShell(VisualDictSet):
             env = dmerge(env, kw)
             return safe_popen(msub(' '.join(cmd), **env))
         self.table_view(target=cell_maker, row=row, col=col)
+
+        
+class Wiki:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+
+    def edit(self, file_name):
+        return core_templates.render('TextInput.html', action='', initial=safe_read(file_name))
