@@ -11,7 +11,7 @@ class VisualDictSet(DictSet):
         return sorted(list(set(attr_values)))
         
     def list_view(self, *cols):
-        print core_templates.render('list.html', data=self.dicts, cols=cols)
+        return core_templates.render('list.html', data=self.dicts, cols=cols)
 
     def make_cell_maker(self, row, col, func, multiple=False):
         def cell_maker(row_value, col_value):
@@ -32,7 +32,7 @@ class VisualDictSet(DictSet):
         
         rows = self.enum_attr_values(row)
         cols = self.enum_attr_values(col)
-        print core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
+        return core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
         
 
 class MultiShell(VisualDictSet):
@@ -50,7 +50,7 @@ class MultiShell(VisualDictSet):
         def cell_maker(**env):
             env = dmerge(env, kw)
             return safe_popen(msub(' '.join(cmd), **env))
-        self.table_view(target=cell_maker, row=row, col=col)
+        return self.table_view(target=cell_maker, row=row, col=col)
 
 
 class UrlSet:
@@ -62,7 +62,6 @@ class UrlSet:
 
 core_urls = UrlSet('/ans42/prj/python-lib/bin')
 
-
 class Wiki:
     def __init__(self, dir):
         self.dir = dir
@@ -70,5 +69,5 @@ class Wiki:
     def view(self, path):
         path = os.path.realpath(os.path.join(self.dir, path))
         views = [('view', core_urls.gen_url('sh.cgi', input_visibility='hidden', cmd='asciidoc --out-file=- %s'%path)),('edit', core_urls.gen_url('ed.cgi', path=path))]
-        print core_templates.render('tabs.html', views=views)
+        return core_templates.render('tabs.html', views=views)
 
