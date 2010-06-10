@@ -5,6 +5,7 @@ import subprocess
 import time
 import string
 from mako.template import Template
+from itertools import groupby
 
 class GErr(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -13,6 +14,21 @@ class GErr(exceptions.Exception):
 
     def __str__(self):
         return "%s\n%s"%(self.msg, self.obj)
+
+def short_repr(x):
+    if len(x) < 80: return x
+    else: return x[:80] + '...'
+    
+def traceit(func):
+    def wrapper(*args, **kw):
+        args_repr = [repr(arg)[:80] for arg in args]
+        kw_repr = ['%s=%s'%(k, repr(v))[:80] for k,v in kw]
+        full_repr = map(short_repr, args_repr + kw_repr)
+        print '%s(%s)'%(func.__name__, ', '.join(full_repr))
+        result = func(*args, **kw)
+        print '=> %s'%(repr(result))
+        return result
+    return wrapper
 
 class Env(dict):
     def __init__(self, d={}, **kw):
@@ -100,21 +116,39 @@ def msub(template, **env):
         cur = sub(cur, **env)
     return cur
 
-def parse_cmd_args(args):
-    splited_args = [i.split('=', 1) for i in args]
-    list_args = [i[0] for i in splited_args if len(i)==1]
-    kw_args = dict([i for i in splited_args if len(i)==2])
+def parse_cmd_args(args, env):
+    def parse_arg(arg):
+        if arg.startswith(':'): return (arg,)
+        else:  return arg.split('=', 1)
+    def eval_arg(arg):
+        if not arg.startswith(':'):
+            return arg
+        try:
+            return eval(arg, env)
+        except exceptions.Exception,e:
+            return GErr("arg %s eval error"%arg, e)
+    args = map(parse_arg, args)
+    args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
+    args = dict(args)
+    list_args = args.get(1, [])
+    kw_args = args.get(2, [])
+    list_args = [eval_arg(i) for (i,) in list_args]
+    kw_args = dict([(k, eval_arg(v)) for (k,v) in kw_args])
     return list_args, kw_args
 
 def run_cmd(env, args):
-    list_args, kw_args = parse_cmd_args(args)
+    list_args, kw_args = parse_cmd_args(args[1:], env)
     try:
-        func = list_args[0]
+        func = args[0]
     except exceptions.IndexError:
         raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
-    if not callable(func): raise GErr("not callable", func)
-    return func(*list_args[1:], **kw_args)
+    if not callable(func):
+        if  list_args or kw_args:
+            raise GErr("not callable", func)
+        else:
+            return func
+    return func(*list_args, **kw_args)
 
 def shell(cmd):
     ret = subprocess.call(cmd, shell=True)
@@ -136,5 +170,8 @@ def safe_popen(cmd):
     except GErr,e:
         return str(e)
         
+def sh_sub(str):
+    exprs = re.findall(str, '`([^`])`')
+    return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)
 
 core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))

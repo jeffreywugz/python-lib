@@ -1,3 +1,4 @@
+import os, os.path
 import exceptions
 import re
 
@@ -22,7 +23,10 @@ def get_ext(name):
 
 def file_extract(f, pattern):
     content = safe_read(f)
-    return re.search(pattern, content).groups()
+    match = re.search(pattern, content)
+    if match: return match.groups()
+    else: return []
 
 def mkdir(dir):
     if not os.path.exists(dir): os.mkdir(dir)
+

@@ -42,9 +42,9 @@ class MultiShell(VisualDictSet):
     def sub(self, *cmd, **kw):
         dicts = self * kw
         return dicts.map(lambda **env: msub(' '.join(cmd), **env))
-        
+
     def run(self, *cmd, **kw):
-        map(shell, self.sub(*cmd, **kw))
+        return map(shell, self.sub(*cmd, **kw))
 
     def vrun(self, row, col, *cmd, **kw):
         def cell_maker(**env):
@@ -52,6 +52,8 @@ class MultiShell(VisualDictSet):
             return safe_popen(msub(' '.join(cmd), **env))
         return self.table_view(target=cell_maker, row=row, col=col)
 
+    def filter(self, **kw):
+        return MultiShell(self.query(**kw))
 
 class UrlSet:
     def __init__(self, base_url):

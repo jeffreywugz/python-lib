@@ -1,4 +1,5 @@
 from functools import *
+import pprint
 
 def compose(func_1, func_2):
     def composition(*args, **kwargs):
@@ -25,7 +26,10 @@ def lflatten(li):
         return reduce(lambda x,y:x+y, map(lflatten, li), [])
     else:
         return [li]
-    
+
+def mkdict(keys, values):
+    return dict(map(None, keys, values))
+
 def dmerge(*dicts):
     return reduce(lambda a,b: a.update(b) or a, dicts, {})
 
@@ -68,3 +72,5 @@ class DictSet:
     def __mul__(self, dicts):
         return DictSet(self.dicts, dicts)
 
+    def __str__(self):
+        return pprint.pformat(self.dicts)
