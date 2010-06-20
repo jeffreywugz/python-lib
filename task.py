@@ -1,13 +1,13 @@
 from msite import *
-from extra import *
 
 def test_control():
-    numbers = VisualDictSet(x=range(10), y=range(10))
-    def product(x,y, **kw): return x*y
-    numbers.update(product=lambda x,y: x*y)
-    print numbers.list_view('x', 'y', 'product')
-    print numbers.table_view(target=product, row='x', col='y')
-    print numbers.table_view(target='product', row='x', col='y')
+    numbers = dcmap(dmerge, [dict(x=v) for v in range(3)], [dict(y=v) for v in range(3)])
+    numbers = map(lambda d: dupdated(d, product=lambda x,y,**kw: x*y), numbers)
+    print render_list(numbers, 'x','y', 'product')
+    print render_table(lambda x,y:x*y, range(3), range(3))
+    collpsed = dszip(numbers, lambda d,*ds: d['x']*d['y'], 'y', 'x')
+    print render_ds(collpsed, 'x')
+    print render_list(collpsed, 'x', *range(4))
 
 def test_container():
     views = [('home', '/ans42'), ('work', '/share/work')]

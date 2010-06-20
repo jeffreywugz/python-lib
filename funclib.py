@@ -1,4 +1,6 @@
 from functools import *
+import copy
+import itertools
 import pprint
 
 def compose(func_1, func_2):
@@ -27,6 +29,9 @@ def lflatten(li):
     else:
         return [li]
 
+def lmerge(*l):
+    return reduce(lambda a,b: list(a)+list(b), l, [])
+    
 def mkdict(keys, values):
     return dict(map(None, keys, values))
 
@@ -36,6 +41,14 @@ def dmerge(*dicts):
 def dmatch(d, **pat):
     return set(pat.items()) <= set(d.items())
 
+def dslice(d, *keys):
+    return map(lambda x: d[x], keys)
+
+def dupdated(d, **kw):
+    new_dict = copy.copy(d)
+    new_dict.update([(k,v(**d)) for k,v in kw.items()])
+    return new_dict
+                  
 def dmap(func, d):
     return dict([(k, func(v)) for (k,v) in d.items()])
 
@@ -48,29 +61,17 @@ def dcmap(func, *args):
     list = dcmul(*args)
     return map(lambda x:func(*x), list)
 
-class DictSet:
-    def __init__(self, *args, **kw):
-        def to_list(v):
-            if type(v) == list or type(v) == tuple: return v
-            else: return [v]
-        def to_dicts(k, vs):
-            return [{k: v} for v in vs]
-        single_key_dicts = [to_dicts(k, to_list(v)) for (k,v) in kw.items()]
-        dicts = args + tuple(single_key_dicts)
-        dicts = map(to_list, dicts)
-        self.dicts = dcmap(dmerge, *dicts)
+def dsgroup(ds, *keys):
+    def keyfunc(d):
+        return dslice(d, *keys)
+    return itertools.groupby(sorted(ds, key=keyfunc), keyfunc)
 
-    def query(self, **kw):
-        return filter(lambda x: dmatch(x, **kw), self.dicts)
+def dscollpse(ds, target, key):
+    return dict([(k[0], target(*v)) for k,v in dsgroup(ds, key)])
 
-    def update(self, **kw):
-        map(lambda env: env.update(dmap(lambda v: v(**env), kw)), self.dicts)
+def dszip(ds, target, expand_key, *key):
+    return [dmerge(mkdict(key, k), dscollpse(v, target, expand_key)) for k,v in dsgroup(ds, *key)]
 
-    def map(self, func):
-        return map(lambda d:func(**d), self.dicts)
-    
-    def __mul__(self, dicts):
-        return DictSet(self.dicts, dicts)
-
-    def __str__(self):
-        return pprint.pformat(self.dicts)
+def dskeys(ds):
+    keys = lmerge(*map(lambda d:d.keys(), ds))
+    return list(set(keys))
