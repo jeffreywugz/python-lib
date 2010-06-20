@@ -35,6 +35,9 @@ def lmerge(*l):
 def mkdict(keys, values):
     return dict(map(None, keys, values))
 
+def mkds(keys, values_list):
+    return [mkdict(keys, values) for values in values_list]
+
 def dmerge(*dicts):
     return reduce(lambda a,b: a.update(b) or a, dicts, {})
 
@@ -75,3 +78,6 @@ def dszip(ds, target, expand_key, *key):
 def dskeys(ds):
     keys = lmerge(*map(lambda d:d.keys(), ds))
     return list(set(keys))
+
+def dsfilter(ds, **kw):
+    return filter(lambda d:dmatch(d, **kw), ds)

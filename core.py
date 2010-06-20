@@ -124,7 +124,7 @@ def parse_cmd_args(args, env):
         if not arg.startswith(':'):
             return arg
         try:
-            return eval(arg, env)
+            return eval(arg[1:], env)
         except exceptions.Exception,e:
             return GErr("arg %s eval error"%arg, e)
     args = map(parse_arg, args)

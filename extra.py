@@ -1,21 +1,31 @@
 from common import *
 import urllib
 
-def render_list(ds, *cols):
+def render_list_as_html(ds, *cols):
     return core_templates.render('list.html', data=ds, cols=cols)
     
+def render_list_as_txt(ds, *cols):
+    data = [dslice(d, *cols) for d in ds]
+    data = [cols] + data
+    def list2str(items):
+        return ',\t'.join([str(x).strip() for x in items])
+    return '\n'.join([list2str(items) for items in data])
+
 def render_table(cell_maker, rows, cols):
     return core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
 
-def render_ds(ds, head, sortkey=None):
+def render_ds(ds, head, terminal='html', sortkey=None):
+    render = globals().get('render_list_as_%s'%(terminal), None)
+    if not render:
+        return "No terminal defined for %s" % terminal
     cols = sorted(dskeys(ds), key=sortkey)
     cols.remove(head)
     cols.insert(0, head)
-    return render_list(ds, *cols)
+    return render(ds, *cols)
 
 def dssub(ds, *tpl, **kw):
-    ds = dsdcmul(ds, [kw])
-    return map(lambda **env: msub(' '.join(tpl), **env), ds)
+    ds = dcmap(dmerge, ds, [kw])
+    return map(lambda env: msub(' '.join(tpl), **env), ds)
 
 def msh_run(ds, *cmd, **kw):
     return map(shell, dssub(ds, *cmd, **kw))
