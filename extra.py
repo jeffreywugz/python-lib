@@ -5,7 +5,9 @@ def render_list_as_html(ds, *cols):
     return core_templates.render('list.html', data=ds, cols=cols)
     
 def render_list_as_txt(ds, *cols):
-    data = [dslice(d, *cols) for d in ds]
+    def safe_dslice(d, *keys):
+        return map(lambda x: d.get(x, None), keys)
+    data = [safe_dslice(d, *cols) for d in ds]
     data = [cols] + data
     def list2str(items):
         return ',\t'.join([str(x).strip() for x in items])
@@ -50,6 +52,7 @@ class Wiki:
         self.dir = dir
 
     def view(self, path='index.adoc'):
+        if not get_ext(path): path = path + '.adoc'
         path = os.path.realpath(os.path.join(self.dir, path))
         views = [('view', core_urls.gen_url('sh.cgi', input_visibility='hidden', cmd='asciidoc --out-file=- %s'%path)),('edit', core_urls.gen_url('ed.cgi', path=path))]
         return core_templates.render('tabs.html', views=views)
