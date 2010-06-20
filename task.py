@@ -1,4 +1,5 @@
 from msite import *
+from extra import *
 
 def test_control():
     numbers = dcmap(dmerge, [dict(x=v) for v in range(3)], [dict(y=v) for v in range(3)])
@@ -9,6 +10,11 @@ def test_control():
     print render_ds(collpsed, 'x')
     print render_list(collpsed, 'x', *range(4))
 
+def test_msh():
+    hosts = dcmap(dmerge, [dict(host='host%d'% i) for i in range(3)], [dict(user='user%d'% i) for i in range(3)])
+    # msh_run(hosts, 'echo', '$host')
+    print render_ds(msh_vrun(hosts, 'host', 'user', 'echo $user@$host'), 'host')
+             
 def test_container():
     views = [('home', '/ans42'), ('work', '/share/work')]
     print core_templates.render('panels.html',views=views)

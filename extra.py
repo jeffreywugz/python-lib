@@ -13,31 +13,18 @@ def render_ds(ds, head, sortkey=None):
     cols.insert(0, head)
     return render_list(ds, *cols)
 
-# class MultiShell(VisualDictSet):
-#     def __init__(self, *args, **kw):
-#         VisualDictSet.__init__(self, *args, **kw)
+def dssub(ds, *tpl, **kw):
+    ds = dsdcmul(ds, [kw])
+    return map(lambda **env: msub(' '.join(tpl), **env), ds)
 
-#     def sub(self, *cmd, **kw):
-#         dicts = self * kw
-#         return dicts.map(lambda **env: msub(' '.join(cmd), **env))
+def msh_run(ds, *cmd, **kw):
+    return map(shell, dssub(ds, *cmd, **kw))
 
-#     def run(self, *cmd, **kw):
-#         return map(shell, self.sub(*cmd, **kw))
-
-#     def vrun(self, row, col, *cmd, **kw):
-#         def cell_maker(**env):
-#             env = dmerge(env, kw)
-#             return safe_popen(msub(' '.join(cmd), **env))
-#         return self.table_view(target=cell_maker, row=row, col=col)
-
-#     def filter(self, **kw):
-#         return type(self)(self.query(**kw))
-
-#     def qrun(self, *cmd, **kw):
-#         return self.filter(**kw).run(*cmd)
-
-#     def qvrun(self, row, col, *cmd, **kw):
-#         return self.filter(**kw).vrun(row, col, *cmd)
+def msh_vrun(ds, key, expand_key, *cmd, **kw):
+    def target(d, *ds):
+        env = dmerge(d, kw)
+        return safe_popen(msub(' '.join(cmd), **env))
+    return dszip(ds, target, expand_key, key)
     
 class UrlSet:
     def __init__(self, base_url):
