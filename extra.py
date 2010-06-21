@@ -34,16 +34,16 @@ def dssub(ds, *tpl, **kw):
     ds = dcmap(dmerge, ds, [kw])
     return map(lambda env: msub(' '.join(tpl), **env), ds)
 
-def msh_run(ds, *cmd, **kw):
+def ds_run(ds, *cmd, **kw):
     return map(shell, dssub(ds, *cmd, **kw))
 
-def msh_vrun(ds, key, expand_key, *cmd, **kw):
+def ds_vrun(ds, key, expand_key, *cmd, **kw):
     def target(d, *ds):
         env = dmerge(d, kw)
         return safe_popen(msub(' '.join(cmd), **env))
     return dszip(ds, target, expand_key, key)
 
-def msh_veval(ds, key, expand_key, expr, env, **kw):
+def ds_veval(ds, key, expand_key, expr, env, **kw):
     def target(d, *ds):
         sub_env = dmerge(d, kw)
         expand_expr = msub(expr, **sub_env)
