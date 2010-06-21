@@ -1,6 +1,8 @@
 import sys, os
 my_lib_dir = os.path.dirname(os.path.abspath(__file__))
 import exceptions
+import copy
+import re
 import subprocess
 import time
 import string
@@ -106,16 +108,32 @@ class Log:
         values = [safe_eval(line) for line in lines]
         return filter(None, values)
 
-def sub(template, **vars):
-    return string.Template(template).safe_substitute(**vars)
+def sub(template, env={}, **vars):
+    return string.Template(template).safe_substitute(env, **vars)
 
-def msub(template, **env):
+def msub(template, env={}, **kw):
     old = ""
     cur = template
+    new_env = copy.copy(env)
+    new_env.update(kw)
     while cur != old:
         old = cur
-        cur = sub(cur, **env)
+        cur = sub(cur, new_env)
     return cur
+
+def str2dict(template, str):
+    def normalize(str):
+        return re.sub('\$(\w+)', r'${\1:\w+}', str)
+    def tore(str):
+        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
+    rexp = tore(normalize(template))
+    match = re.match(rexp, str)
+    if not match: return {}
+    else: return match.groupdict()
+
+def sub_tpl(target, tpl, str):
+    env = str2dict(tpl, str)
+    return sub(target, env)
 
 def shell(cmd):
     ret = subprocess.call(cmd, shell=True)
@@ -137,6 +155,11 @@ def safe_popen(cmd):
     except GErr,e:
         return "Error:\n" + str(e)
         
+def shell_tpl(cmd, tpl, str):
+    cmd = sub_tpl(cmd, tpl, str)
+    print cmd
+    shell(cmd)
+    
 def sh_sub(str):
     exprs = re.findall(str, '`([^`])`')
     return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)

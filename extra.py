@@ -49,7 +49,7 @@ def ds_veval(ds, key, expand_key, expr, env, **kw):
         expand_expr = msub(expr, **sub_env)
         return safe_eval(expand_expr, env)
     return dszip(ds, target, expand_key, key)
-    
+
 class UrlSet:
     def __init__(self, base_url):
         self.base_url = base_url

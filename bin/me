@@ -25,6 +25,17 @@ def echo(*args, **kw_args):
 def eval_expr(expr):
     result = eval(expr)
     print result
+
+def lop(op, func, *arg, **kw):
+    if not len(arg) > 1: raise GErr('me_map require at least a argument as List', (arg, kw))
+    list = arg[-1]
+    arg = arg[:-1]
+    func = eval(func)
+    op = eval(op)
+    def callback(i):
+        new_arg = arg + (i,)
+        return func(*new_arg, **kw)
+    return op(callback, list)
     
 tasks = get_default_tasks()
 # print 'total tasks: %s'%tasks

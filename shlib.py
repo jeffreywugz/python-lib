@@ -1,6 +1,7 @@
 import os, os.path
 import exceptions
 import re
+from glob import glob
 
 def gen_name(*parts):
     return '.'.join(parts)
@@ -30,3 +31,4 @@ def file_extract(f, pattern):
 def mkdir(dir):
     if not os.path.exists(dir): os.mkdir(dir)
 
+    
