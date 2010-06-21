@@ -1,7 +1,9 @@
 .PHONY: all test clean
-all: test-msh
+all: test-me
 test-me:
 	me echo x=1 y=2 z
+	me identity :'[1,2,3]'
+	me 'range(100)' / map :'lambda x:x*x' :_ / pformat
 test-control:
 	me test_control >tmp.html && firefox tmp.html
 test-container:

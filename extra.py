@@ -9,8 +9,12 @@ def render_list_as_txt(ds, *cols):
         return map(lambda x: d.get(x, None), keys)
     data = [safe_dslice(d, *cols) for d in ds]
     data = [cols] + data
+    def toStr(x):
+        x = str(x)
+        if x.startswith('Error:'): return 'Error'
+        else: return x
     def list2str(items):
-        return ',\t'.join([str(x).strip() for x in items])
+        return ',\t'.join([toStr(x).strip() for x in items])
     return '\n'.join([list2str(items) for items in data])
 
 def render_table(cell_maker, rows, cols):
@@ -33,6 +37,12 @@ def msh_run(ds, *cmd, **kw):
     return map(shell, dssub(ds, *cmd, **kw))
 
 def msh_vrun(ds, key, expand_key, *cmd, **kw):
+    def target(d, *ds):
+        env = dmerge(d, kw)
+        return safe_popen(msub(' '.join(cmd), **env))
+    return dszip(ds, target, expand_key, key)
+
+def msh_veval(ds, key, expand_key, *expr, **kw):
     def target(d, *ds):
         env = dmerge(d, kw)
         return safe_popen(msub(' '.join(cmd), **env))

@@ -116,40 +116,6 @@ def msub(template, **env):
         cur = sub(cur, **env)
     return cur
 
-def parse_cmd_args(args, env):
-    def parse_arg(arg):
-        if arg.startswith(':'): return (arg,)
-        else:  return arg.split('=', 1)
-    def eval_arg(arg):
-        if not arg.startswith(':'):
-            return arg
-        try:
-            return eval(arg[1:], env)
-        except exceptions.Exception,e:
-            return GErr("arg %s eval error"%arg, e)
-    args = map(parse_arg, args)
-    args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
-    args = dict(args)
-    list_args = args.get(1, [])
-    kw_args = args.get(2, [])
-    list_args = [eval_arg(i) for (i,) in list_args]
-    kw_args = dict([(k, eval_arg(v)) for (k,v) in kw_args])
-    return list_args, kw_args
-
-def run_cmd(env, args):
-    list_args, kw_args = parse_cmd_args(args[1:], env)
-    try:
-        func = args[0]
-    except exceptions.IndexError:
-        raise GErr('run_cmd(): need to specify a callable object.', args)
-    func = eval(func, env)
-    if not callable(func):
-        if  list_args or kw_args:
-            raise GErr("not callable", func)
-        else:
-            return func
-    return func(*list_args, **kw_args)
-
 def shell(cmd):
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
@@ -168,7 +134,7 @@ def safe_popen(cmd):
     try:
         return popen(cmd)
     except GErr,e:
-        return str(e)
+        return "Error:\n" + str(e)
         
 def sh_sub(str):
     exprs = re.findall(str, '`([^`])`')

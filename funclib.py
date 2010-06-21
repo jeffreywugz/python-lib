@@ -1,7 +1,11 @@
 from functools import *
+import itertools
 import copy
 import itertools
 import pprint
+
+def identity(x):
+    return x
 
 def compose(func_1, func_2):
     def composition(*args, **kwargs):
@@ -23,14 +27,31 @@ def flip(func):
         return func(*reversed(*arg))
     return flip_func
 
+def pipes_call(data, *pipes):
+    return reduce(lambda x,p: p(x), pipes, data)
+
 def lflatten(li):
     if type(li) == list or type(li) == tuple:
         return reduce(lambda x,y:x+y, map(lflatten, li), [])
     else:
         return [li]
 
+def step_in(i, steps):
+    tail = filter(lambda x: x > i, steps)
+    if not tail: return None
+    return tail[0]
+    
 def lmerge(*l):
     return reduce(lambda a,b: list(a)+list(b), l, [])
+
+def lsplit(l, *sep):
+    result = [[]]
+    for i in l:
+        if i in sep:
+            result.append([])
+        else:
+            result[-1].append(i)
+    return result
     
 def mkdict(keys, values):
     return dict(map(None, keys, values))
