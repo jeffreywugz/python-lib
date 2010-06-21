@@ -23,7 +23,8 @@ def parse_cmd_args(args, env):
 def run_cmd(env, args):
     pipes = lsplit(args, '/')
     for p in pipes[1:]:
-        if not ':_' in p: p.append(':_')
+        if not (':_' in p or any([i.endswith('=:_') for i in p])):
+            p.append(':_')
     results = [cmd_pipe_eval(env, p) for p in pipes]
     return results[-1]
 

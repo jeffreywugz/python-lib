@@ -30,6 +30,12 @@ def traceit(func):
         return result
     return wrapper
 
+def safe_eval(expr, env={}, default=None):
+    try:
+        return eval(expr, env)
+    except exceptions.Exception,e:
+        return default
+    
 class Env(dict):
     def __init__(self, d={}, **kw):
         dict.__init__(self)
@@ -97,12 +103,7 @@ class Log:
 
     def get(self):
         lines = self.file.readlines()
-        def safe_eval(expr, default):
-            try:
-                return eval(expr)
-            except exceptions.Exception:
-                return default
-        values = [safe_eval(line, None) for line in lines]
+        values = [safe_eval(line) for line in lines]
         return filter(None, values)
 
 def sub(template, **vars):

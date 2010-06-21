@@ -9,6 +9,7 @@ def render_list_as_txt(ds, *cols):
         return map(lambda x: d.get(x, None), keys)
     data = [safe_dslice(d, *cols) for d in ds]
     data = [cols] + data
+    data = map(lflatten, data)
     def toStr(x):
         x = str(x)
         if x.startswith('Error:'): return 'Error'
@@ -42,10 +43,11 @@ def msh_vrun(ds, key, expand_key, *cmd, **kw):
         return safe_popen(msub(' '.join(cmd), **env))
     return dszip(ds, target, expand_key, key)
 
-def msh_veval(ds, key, expand_key, *expr, **kw):
+def msh_veval(ds, key, expand_key, expr, env, **kw):
     def target(d, *ds):
-        env = dmerge(d, kw)
-        return safe_popen(msub(' '.join(cmd), **env))
+        sub_env = dmerge(d, kw)
+        expand_expr = msub(expr, **sub_env)
+        return safe_eval(expand_expr, env)
     return dszip(ds, target, expand_key, key)
     
 class UrlSet:
