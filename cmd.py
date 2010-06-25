@@ -1,5 +1,15 @@
 from common import *
 
+def filter_cmd_args(args, *opts):
+    def getopt(arg):
+        for opt in opts:
+            prefix = '--%s='%(opt)
+            if arg.startswith(prefix): return opt, arg.replace(prefix, '')
+        return None, None
+    rest_args = filter(lambda arg: getopt(arg) == (None, None), args)
+    kw = dict([getopt(arg) for arg in args])
+    return rest_args, kw
+
 def parse_cmd_args(args, env):
     def parse_arg(arg):
         if arg.startswith(':'): return (arg,)
@@ -21,6 +31,9 @@ def parse_cmd_args(args, env):
     return list_args, kw_args
 
 def run_cmd(env, args):
+    args, opts = filter_cmd_args(args, 'init')
+    init = opts.get('init', '')
+    exec init in env
     pipes = lsplit(args, '/')
     for p in pipes[1:]:
         if not (':_' in p or any([i.endswith('=:_') for i in p])):

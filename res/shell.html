@@ -1,6 +1,11 @@
+<%!
+import os.path
+def lastDir(dir):
+    return os.path.split(dir)[1]
+%>
 <html>
   <head>
-    <title>[${workdir}]$ ${cmd}</title>
+    <title>${cmd} @${lastDir(workdir)}</title>
     <style type="text/css">
       .input {
           width: 100%;

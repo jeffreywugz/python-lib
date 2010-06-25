@@ -36,7 +36,16 @@ def lop(op, func, *arg, **kw):
         new_arg = arg + (i,)
         return func(*new_arg, **kw)
     return op(callback, list)
-    
+
+def create_init_env(env, args):
+    list_args, kw_args = parse_cmd_args(args)
+    if kw_args.has_key('--init'):
+        init = kw_args['--init']
+        del kw_args['--init']
+    new_env = copy.copy(env)
+    new_env.update(locals())
+    return new_env
+
 tasks = get_default_tasks()
 # print 'total tasks: %s'%tasks
 for t in tasks:

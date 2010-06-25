@@ -18,7 +18,8 @@ workdir = os.path.realpath(args.getfirst('workdir', '.'))
 expand_cmd=cmd
 p = subprocess.Popen(expand_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workdir)
 stdout = p.stdout.read()
-if not re.search(r'^\s*<.+>.*</.+>\s*$', stdout, re.S):
+tags_match = re.findall(r'<.+?>', stdout, re.S)
+if len(tags_match) < 5:
     stdout = '<pre>%s</pre>'% stdout
 stderr = p.stderr.read()
 p.wait()

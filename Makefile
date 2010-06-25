@@ -2,9 +2,10 @@
 all: test-me
 test-me:
 	me echo x=1 y=2 z
+	me --init='a=[1,2,3]' a
 	me identity :'[1,2,3]'
-	me 'range(100)' / map :'lambda x:x*x' :_ / pformat
-	me glob '*.py' / lop map shell_tpl 'echo mv $$name.py $$name.perl' '$$name\.$$ext'
+	me 'range(10)' / map :'lambda x:x*x' :_ / pformat
+	me glob '*.py' / lop map sub_shell  '$$name\.$$ext' 'echo mv $$name.py $$name.perl'
 test-control:
 	me test_control >tmp.html && firefox tmp.html
 test-container:

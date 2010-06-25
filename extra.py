@@ -1,6 +1,22 @@
 from common import *
 import urllib
 
+class MarkCodec:
+    start_tag = '==============================%s=============================='
+    end_tag = '------------------------------%s------------------------------'
+    def __init__(self, tag='mark'):
+        self.tag = tag
+
+    def dumps(self, value):
+        return '%s\n%s\n%s' %(self.start_tag % self.tag, repr(value), self.end_tag % self.tag)
+
+    def loads(self, content, default=None):
+        match = re.search('%s\n(.*)\n%s'%(self.start_tag % self.tag, self.end_tag % self.tag), content, re.S)
+        if not match:
+            return default
+        expr = match.group(1)
+        return eval(expr)
+    
 def render_list_as_html(ds, *cols):
     return core_templates.render('list.html', data=ds, cols=cols)
     
@@ -21,6 +37,12 @@ def render_list_as_txt(ds, *cols):
 def render_table(cell_maker, rows, cols):
     return core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
 
+def render_panels(views):
+    return core_templates.render('panels.html',views=views)
+
+def render_tabs(views):
+    return core_templates.render('tabs.html', views=views)
+    
 def render_ds(ds, head, terminal='html', sortkey=None):
     render = globals().get('render_list_as_%s'%(terminal), None)
     if not render:
@@ -54,10 +76,18 @@ class UrlSet:
     def __init__(self, base_url):
         self.base_url = base_url
 
-    def gen_url(self, url, **kw):
+    def gen(self, url, **kw):
         return '%s/%s?%s'%(self.base_url, url, urllib.urlencode(kw))
 
 core_urls = UrlSet('/ans42/prj/python-lib/bin')
+
+def gen_sh_url(dir, cmd, input=True):
+    if input: input_visibility='show'
+    else: input_visibility='hidden'
+    return core_urls.gen('sh.cgi', workdir=dir, cmd=cmd, input_visibility=input_visibility)
+
+def gen_ed_url(path):
+    return core_urls.gen('ed.cgi', path=path)
 
 class Wiki:
     def __init__(self, dir):
@@ -66,6 +96,10 @@ class Wiki:
     def view(self, path='index.adoc'):
         if not get_ext(path): path = path + '.adoc'
         path = os.path.realpath(os.path.join(self.dir, path))
-        views = [('view', core_urls.gen_url('sh.cgi', input_visibility='hidden', cmd='asciidoc --out-file=- %s'%path)),('edit', core_urls.gen_url('ed.cgi', path=path))]
-        return core_templates.render('tabs.html', views=views)
+        views = [('view', gen_sh_url('.', 'asciidoc --out-file=- %s'%path, False)),('edit', gen_ed_url(path))]
+        return render_tabs(views)
 
+def multi_cmd_view(views, input=False):
+    return [(name, gen_sh_url(dir, cmd, input)) for name, dir, cmd in views]
+    
+        

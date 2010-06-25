@@ -17,8 +17,8 @@ def test_msh():
              
 def test_container():
     views = [('home', '/ans42'), ('work', '/share/work')]
-    print core_templates.render('panels.html',views=views)
-    print core_templates.render('tabs.html', views=views)
+    print render_panels(views)
+    print render_tabs(views)
 
 def test_msite():
     app = MsiteApp('.', rpc.RpcDemo(), globals())

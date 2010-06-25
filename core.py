@@ -131,8 +131,9 @@ def str2dict(template, str):
     if not match: return {}
     else: return match.groupdict()
 
-def sub_tpl(target, tpl, str):
+def tpl_sub(tpl, target, str):
     env = str2dict(tpl, str)
+    env.update(_=str)
     return sub(target, env)
 
 def shell(cmd):
@@ -155,13 +156,23 @@ def safe_popen(cmd):
     except GErr,e:
         return "Error:\n" + str(e)
         
-def shell_tpl(cmd, tpl, str):
-    cmd = sub_tpl(cmd, tpl, str)
+def sub_shell(tpl, cmd, str):
+    cmd = tpl_sub(tpl, cmd, str)
     print cmd
     shell(cmd)
     
 def sh_sub(str):
     exprs = re.findall(str, '`([^`])`')
     return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)
+
+def cachedMethod(func):
+    def wrapper(self, *arg):
+        cache_attr = '%s_cached' % func.func_name
+        if not hasattr(self, cache_attr): setattr(self ,cache_attr, {})
+        cache =  getattr(self, cache_attr)
+        if not cache.has_key(arg):
+            cache[arg] = func(self, *arg)
+        return cache[arg]
+    return wrapper
 
 core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))
