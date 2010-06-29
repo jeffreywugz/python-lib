@@ -104,23 +104,3 @@ def dskeys(ds):
 def dsfilter(ds, **kw):
     return filter(lambda d:dmatch(d, **kw), ds)
 
-def gen_list(*ranges):
-    def parse(i):
-        match = re.match('^([-+])?([0-9]+)(-[0-9]+)?$', i)
-        if not match: raise GErr('illformaled range specifier', i)
-        type, start, end = match.groups()
-        start = int(start)
-        if type == None: type = '+'
-        if end != None: end = end[1:]
-        if end == None or end == '' : end = start + 1
-        else: end = int(end)
-        return type, range(start, end)
-    ranges = [parse(i) for i in ranges]
-    included = [r for t, r in ranges if t == '+']
-    excluded = [r for t, r in ranges if t == '-']
-    included = reduce(lambda x,y: x+y, included, [])
-    excluded = reduce(lambda x,y: x+y, excluded, [])
-    included = set(included)
-    excluded = set(excluded)
-    ranges = included - excluded
-    return sorted(list(ranges))

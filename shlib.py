@@ -2,6 +2,7 @@ import os, os.path
 import exceptions
 import re
 from glob import glob
+from mako.template import Template
 
 def gen_name(*parts):
     return '.'.join(parts)
@@ -31,4 +32,7 @@ def file_extract(f, pattern):
 def mkdir(dir):
     if not os.path.exists(dir): os.mkdir(dir)
 
+def gen_file(env, tpl, file):
+    new_content = Template(filename=tpl).render(**env)
+    write(file, new_content)
     

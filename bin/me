@@ -7,7 +7,6 @@ from pprint import pformat
 from common import *
 from extra import *
 
-
 def get_default_tasks():
     top_tasks = ['top.py', '../top.py', '../../top.py'] 
     local_tasks = ['task.py', '../task.py', '../../task.py']
@@ -37,19 +36,11 @@ def lop(op, func, *arg, **kw):
         return func(*new_arg, **kw)
     return op(callback, list)
 
-def create_init_env(env, args):
-    list_args, kw_args = parse_cmd_args(args)
-    if kw_args.has_key('--init'):
-        init = kw_args['--init']
-        del kw_args['--init']
-    new_env = copy.copy(env)
-    new_env.update(locals())
-    return new_env
-
 tasks = get_default_tasks()
 # print 'total tasks: %s'%tasks
 for t in tasks:
     # print 'load %s'%t
+    globals().update(__task_file__=t)
     execfile(t, globals())
-print run_cmd(locals(), sys.argv[1:])
+print run_cmd(globals(), sys.argv[1:])
     
