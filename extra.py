@@ -73,13 +73,19 @@ def render_ds(ds, head, terminal='html', sortkey=None):
     cols.insert(0, head)
     return render(ds, *cols)
 
-def dssub(ds, *tpl, **kw):
-    ds = dcmap(dmerge, ds, [kw])
-    return map(lambda env: msub(' '.join(tpl), **env), ds)
+def ds_update(ds, **kw):
+    def dupdated(d, **kw):
+        new_dict = copy.copy(d)
+        new_dict.update(kw)
+        return new_dict
+    return map(lambda d: dupdated(d, **kw), ds)
 
-def ds_run(ds, *cmd, **kw):
-    return map(shell, dssub(ds, *cmd, **kw))
-
+def ds_sub(ds, key, expand_key, tpl, **kw):
+    def target(d, *ds):
+        env = dmerge(d, kw)
+        return msub(tpl, **env)
+    return dszip(ds, target, expand_key, key)
+    
 def ds_vrun(ds, key, expand_key, *cmd, **kw):
     def target(d, *ds):
         env = dmerge(d, kw)

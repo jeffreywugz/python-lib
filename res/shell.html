@@ -36,9 +36,9 @@ def lastDir(dir):
   </head>
   <body onload="input_focus()">
     <form name="shell" action="" method="get" style="visibility:${input_visibility}">
-      <input type="text" class="input" name="workdir" title="dir" style="width:35%" value="${workdir}">
-      <input type="text" class="input" name="cmd" style="width:50%" value="${cmd|x}">
+      <input type="text" class="input" name="workdir" title="dir" style="width:90%" value="${workdir}">
       <input type="submit" style="width:5%" value="execute">
+      <input type="text" class="input" name="cmd" style="width:100%" value="${cmd|x}">
         </form>
         <div class="output">
           <pre id="shell_error" class="error">${stderr}</pre>
