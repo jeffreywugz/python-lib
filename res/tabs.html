@@ -1,7 +1,3 @@
-<%!
-from urllib import unquote, quote_plus
-def escape_quotes(str): return quote_plus(unquote(str).replace("'", r"\'"))
-%>
 <script type="text/javascript">
 function q(id) { return document.getElementById(id);}
 function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
@@ -10,17 +6,22 @@ function hightTab(tab) {
     for each(var t in tabs) {
         if(t.className != 'tab-ref') continue;
         t.style.color="white";
-        if(t.id == tab){
+        if(t.id == tab + '.tab'){
             t.style.color="yellow";
         }
     }
 }
-function selectTab(tab, url){var frame = q('tabsViewPort'); hightTab(tab); frame.src = url;}
+function selectTab(tab){
+    var frame = q('tabsViewPort');
+    hightTab(tab);
+    frame.src = q(tab+'.url').href;
+}
 </script>
 <div id="allTabs" class="Tabs">
   <h3 style="background-color: DimGray">
     % for name, url in views:
-    <a class="tab-ref" id="${name}.tab" href="javascript:selectTab('${name}.tab', '${escape_quotes(url)}')">${name}</a>
+    <a class="tab-ref" id="${name}.tab" href="javascript:selectTab('${name}')">${name}</a>
+    <a id="${name}.url" style="display:none" href="${url}">self</a>
     % endfor
   </h3>
   <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>

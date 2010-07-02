@@ -64,6 +64,11 @@ def render_panels(views):
 def render_tabs(views):
     return core_templates.render('tabs.html', views=views)
     
+def render_obj(obj, exported=None):
+    if exported == None: exported = obj.exported
+    views = [(attr, getattr(obj, attr)) for attr in exported]
+    return render_tabs(views)
+
 def render_ds(ds, head, terminal='html', sortkey=None):
     render = globals().get('render_list_as_%s'%(terminal), None)
     if not render:
