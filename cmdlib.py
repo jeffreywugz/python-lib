@@ -10,10 +10,15 @@ def filter_cmd_args(args, *opts):
     kw = dict([getopt(arg) for arg in args])
     return rest_args, kw
 
+def make_cmd_args(*args, **kw):
+    args_repr = [repr(arg) for arg in args]
+    kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw]
+    return ' '.join(args_repr + kw_repr)
+    
 def parse_cmd_args(args, env):
     def parse_arg(arg):
         if arg.startswith(':'): return (arg,)
-        else:  return arg.split('=', 1)
+        else: return arg.split('=', 1)
     def eval_arg(arg):
         if not arg.startswith(':'):
             return arg
@@ -58,3 +63,4 @@ def cmd_pipe_eval(env, args):
     env.update(_=result)
     return result
 
+    

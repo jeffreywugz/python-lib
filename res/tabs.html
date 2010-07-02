@@ -1,3 +1,7 @@
+<%!
+from urllib import unquote, quote_plus
+def escape_quotes(str): return quote_plus(unquote(str).replace("'", r"\'"))
+%>
 <script type="text/javascript">
       function q(id) { return document.getElementById(id);}
       function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
@@ -6,7 +10,7 @@
     <div class="Tabs">
         <h2>
         % for name, url in views:
-        <a href="javascript:selectTab('${url}')">${name}</a>
+        <a href="javascript:selectTab('${escape_quotes(url)}')">${name}</a>
         % endfor
         </h2>
         <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>

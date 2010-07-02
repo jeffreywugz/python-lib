@@ -6,4 +6,4 @@ sys.path.extend([os.path.join(my_lib_dir, path) for path in lib_paths])
 from core import *
 from funclib import *
 from shlib import *
-from cmd import *
+from cmdlib import *
