@@ -3,15 +3,28 @@ from urllib import unquote, quote_plus
 def escape_quotes(str): return quote_plus(unquote(str).replace("'", r"\'"))
 %>
 <script type="text/javascript">
-      function q(id) { return document.getElementById(id);}
-      function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
-      function selectTab(url){var frame = q('tabsViewPort'); frame.src = url;}
-      </script>
-    <div class="Tabs">
-        <h2>
-        % for name, url in views:
-        <a href="javascript:selectTab('${escape_quotes(url)}')">${name}</a>
-        % endfor
-        </h2>
-        <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
-      </div>
+function q(id) { return document.getElementById(id);}
+function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
+function hightTab(tab) {
+    var tabs = q('allTabs').getElementsByClassName('tab-ref');
+    for each(var t in tabs) {
+        if(t.className != 'tab-ref') continue;
+        t.style.color="white";
+        if(t.id == tab){
+            t.style.color="yellow";
+        }
+    }
+}
+function selectTab(tab, url){var frame = q('tabsViewPort'); hightTab(tab); frame.src = url;}
+</script>
+<div id="allTabs" class="Tabs">
+  <h3 style="background-color: DimGray">
+    % for name, url in views:
+    <a class="tab-ref" id="${name}.tab" href="javascript:selectTab('${name}.tab', '${escape_quotes(url)}')">${name}</a>
+    % endfor
+  </h3>
+  <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
+</div>
+<script type="text/javascript">
+hightTab('${views[0][0]}.tab');
+</script>

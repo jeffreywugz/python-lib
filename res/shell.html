@@ -2,6 +2,9 @@
 import os.path
 def lastDir(dir):
     return os.path.split(dir)[1]
+def display(visibility):
+    if visibility == "show": return "inline"
+    else: return "none"
 %>
 <html>
   <head>
@@ -35,7 +38,7 @@ def lastDir(dir):
       </script>
   </head>
   <body onload="input_focus()">
-    <form name="shell" action="" method="get" style="visibility:${input_visibility}">
+    <form name="shell" action="" method="get" style="display:${display(input_visibility)}">
       <input type="text" class="input" name="workdir" title="dir" style="width:90%" value="${workdir}">
       <input type="submit" style="width:5%" value="execute">
       <input type="text" class="input" name="cmd" style="width:100%" value="${cmd|x}">

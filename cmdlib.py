@@ -20,8 +20,8 @@ def parse_cmd_args(args, env):
         if arg.startswith(':'): return (arg,)
         else: return arg.split('=', 1)
     def eval_arg(arg):
-        if not arg.startswith(':'):
-            return arg
+        if arg.startswith(','): return arg[1:]
+        if not arg.startswith(':'): return arg
         try:
             return eval(arg[1:], env)
         except exceptions.Exception,e:

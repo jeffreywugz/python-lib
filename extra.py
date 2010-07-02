@@ -126,7 +126,9 @@ class Wiki:
         views = [('view', gen_sh_url('.', 'asciidoc --out-file=- %s'%path, False)),('edit', gen_ed_url(path))]
         return render_tabs(views)
 
-def multi_cmd_view(views, input=False):
-    return [(name, gen_sh_url(dir, cmd, input)) for name, dir, cmd in views]
+def multi_cmd_views(views, input=False):
+    def make_views(name, dir, cmd, input=input):
+        return name, gen_sh_url(dir, cmd, input)
+    return [make_views(*v) for v in views]
     
         
