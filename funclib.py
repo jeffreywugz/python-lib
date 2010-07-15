@@ -8,10 +8,13 @@ import pprint
 def identity(x):
     return x
 
-def compose(func_1, func_2):
+def _compose(func1, func2):
     def composition(*args, **kwargs):
-        return func_1(func_2(*args, **kwargs))
+        return func1(func2(*args, **kwargs))
     return composition
+
+def compose(*funcs):
+    return reduce(_compose, funcs, identity)
 
 def unpack(func):
     def unpack_func(args):
@@ -23,13 +26,15 @@ def unpack(func):
             return func(args)
     return unpack_func
 
+def mkfilter(func):
+    def wrapper(stream, *args, **kw):
+        return itertools.imap(lambda x:func(x, *args, **kw), stream)
+    return wrapper
+
 def flip(func):
     def flip_func(*arg):
         return func(*reversed(*arg))
     return flip_func
-
-def pipes_call(data, *pipes):
-    return reduce(lambda x,p: p(x), pipes, data)
 
 def lflatten(li):
     if type(li) == list or type(li) == tuple:
@@ -42,6 +47,12 @@ def step_in(i, steps):
     if not tail: return None
     return tail[0]
     
+def list_sum(lists):
+    result = []
+    for list in lists:
+        result.extend(list)
+    return result
+
 def lmerge(*l):
     return reduce(lambda a,b: list(a)+list(b), l, [])
 

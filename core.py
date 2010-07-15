@@ -32,6 +32,30 @@ def traceit(func):
         return result
     return wrapper
 
+def timeit(func):
+    def wrapper(*args, **kw):
+        start = time.time()
+        result = func(*args, **kw)
+        end = time.time()
+        print '%s(*%s, **%s): %ds'%(func.__name__, args, kw, end-start)
+        return result
+    return wrapper
+
+def mktracer(log):
+    def tracer(func):
+        def wrapper(*args, **kw):
+            start = time.time()
+            result = func(*args, **kw)
+            end = time.time()
+            log.record(func.__name__, result, start, end)
+            return result
+        return wrapper
+    return tracer
+
+def print_table(table):
+    for i in table:
+        print '\t'.join([str(j) for j in i])
+        
 def safe_eval(expr, env={}, default=None):
     try:
         return eval(expr, env)
@@ -74,40 +98,6 @@ class BlockStream:
     def __lshift__(self, content):
         self.out(content)
         
-class Store:
-    def __init__(self, path, default_value=None):
-        self.path, self.default_value = path, default_value
-
-    def set(self, value):
-        with open(self.path, 'w') as f:
-            f.write(repr(value))
-
-    def get(self):
-        try:
-            with open(self.path) as f:
-                value = eval(f.read())
-        except exceptions.IOError:
-            return self.default_value
-        return value
-
-class Log:
-    def __init__(self, path):
-        self.path = path
-        self.file = open(path, 'a+', 1)
-
-    def __del__(self):
-        self.file.close()
-        
-    def record(self, *fields):
-        list = [time.time()]
-        list.extend(fields)
-        self.file.write(repr(list)+'\n')
-
-    def get(self):
-        lines = self.file.readlines()
-        values = [safe_eval(line) for line in lines]
-        return filter(None, values)
-
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)
 
@@ -164,15 +154,5 @@ def sub_shell(tpl, cmd, str):
 def sh_sub(str):
     exprs = re.findall(str, '`([^`])`')
     return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)
-
-def cachedMethod(func):
-    def wrapper(self, *arg):
-        cache_attr = '%s_cached' % func.func_name
-        if not hasattr(self, cache_attr): setattr(self ,cache_attr, {})
-        cache =  getattr(self, cache_attr)
-        if not cache.has_key(arg):
-            cache[arg] = func(self, *arg)
-        return cache[arg]
-    return wrapper
 
 core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))

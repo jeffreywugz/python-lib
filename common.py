@@ -4,6 +4,7 @@ lib_paths = ['.', 'lib/mako.zip', 'lib/simplejson.zip', 'lib/cherrypy.zip', 'msi
 sys.path.extend([os.path.join(my_lib_dir, path) for path in lib_paths])
 
 from core import *
+from store import *
 from funclib import *
 from shlib import *
 from cmdlib import *
