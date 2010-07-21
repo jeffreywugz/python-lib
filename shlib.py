@@ -32,6 +32,9 @@ def file_extract(f, pattern):
 def mkdir(dir):
     if not os.path.exists(dir): os.mkdir(dir)
 
+def rmrf(target):
+    shell('rm -rf %s'%target)
+    
 def gen_file(env, tpl, file):
     new_content = Template(filename=tpl).render(**env)
     write(file, new_content)

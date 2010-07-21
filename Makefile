@@ -1,5 +1,5 @@
 .PHONY: all test clean
-all: test-me
+all: test-control
 test-me:
 	me echo x=1 y=2 z
 	me --init='a=[1,2,3]' a

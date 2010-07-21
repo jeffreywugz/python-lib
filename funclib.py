@@ -26,7 +26,7 @@ def unpack(func):
             return func(args)
     return unpack_func
 
-def mkfilter(func):
+def make_filter(func):
     def wrapper(stream, *args, **kw):
         return itertools.imap(lambda x:func(x, *args, **kw), stream)
     return wrapper
@@ -36,7 +36,7 @@ def flip(func):
         return func(*reversed(*arg))
     return flip_func
 
-def lflatten(li):
+def list_flatten(li):
     if type(li) == list or type(li) == tuple:
         return reduce(lambda x,y:x+y, map(lflatten, li), [])
     else:
@@ -53,10 +53,10 @@ def list_sum(lists):
         result.extend(list)
     return result
 
-def lmerge(*l):
+def list_merge(*l):
     return reduce(lambda a,b: list(a)+list(b), l, [])
 
-def lsplit(l, *sep):
+def list_split(l, *sep):
     result = [[]]
     for i in l:
         if i in sep:
@@ -65,53 +65,37 @@ def lsplit(l, *sep):
             result[-1].append(i)
     return result
     
-def mkdict(keys, values):
+def dict_make(keys, values):
     return dict(map(None, keys, values))
 
-def mkds(keys, values_list):
-    return [mkdict(keys, values) for values in values_list]
-
-def dmerge(*dicts):
+def dict_merge(*dicts):
     return reduce(lambda a,b: a.update(b) or a, dicts, {})
 
-def dmatch(d, **pat):
+def dict_match(d, **pat):
     return set(pat.items()) <= set(d.items())
 
-def dslice(d, *keys):
+def dict_slice(d, *keys):
     return map(lambda x: d[x], keys)
 
-def dupdated(d, **kw):
+def dict_updated(d, extra={}, **kw):
+    new_dict = copy.copy(d)
+    new_dict.update(extra, **kw)
+    return new_dict
+
+def dict_updated_by_callables(d, **kw):
     new_dict = copy.copy(d)
     new_dict.update([(k,v(**d)) for k,v in kw.items()])
     return new_dict
                   
-def dmap(func, d):
+def dict_map(func, d):
     return dict([(k, func(v)) for (k,v) in d.items()])
 
-def dcmul(*args):
+def dc_mul(*args):
     def _dcmul(a,b):
         return [i + [j] for i in a for j in b]
     return reduce(_dcmul, args, [[]])
 
-def dcmap(func, *args):
-    list = dcmul(*args)
+def dc_map(func, *args):
+    list = dc_mul(*args)
     return map(lambda x:func(*x), list)
-
-def dsgroup(ds, *keys):
-    def keyfunc(d):
-        return dslice(d, *keys)
-    return itertools.groupby(sorted(ds, key=keyfunc), keyfunc)
-
-def dscollpse(ds, target, key):
-    return dict([(k[0], target(*v)) for k,v in dsgroup(ds, key)])
-
-def dszip(ds, target, expand_key, *key):
-    return [dmerge(mkdict(key, k), dscollpse(v, target, expand_key)) for k,v in dsgroup(ds, *key)]
-
-def dskeys(ds):
-    keys = lmerge(*map(lambda d:d.keys(), ds))
-    return list(set(keys))
-
-def dsfilter(ds, **kw):
-    return filter(lambda d:dmatch(d, **kw), ds)
 

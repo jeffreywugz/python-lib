@@ -1,4 +1,5 @@
 from common import *
+from render import *
 import urllib
 
 def gen_list(*ranges):
@@ -38,72 +39,6 @@ class MarkCodec:
         expr = match.group(1)
         return eval(expr)
     
-def render_list_as_html(ds, *cols):
-    return core_templates.render('list.html', data=ds, cols=cols)
-    
-def render_list_as_txt(ds, *cols):
-    def safe_dslice(d, *keys):
-        return map(lambda x: d.get(x, None), keys)
-    data = [safe_dslice(d, *cols) for d in ds]
-    data = [cols] + data
-    data = map(lflatten, data)
-    def toStr(x):
-        x = str(x)
-        if x.startswith('Error:'): return 'Error'
-        else: return x
-    def list2str(items):
-        return ',\t'.join([toStr(x).strip() for x in items])
-    return '\n'.join([list2str(items) for items in data])
-
-def render_table(cell_maker, rows, cols):
-    return core_templates.render('table.html', cell_maker=cell_maker, rows=rows, cols=cols)
-
-def render_panels(views):
-    return core_templates.render('panels.html',views=views)
-
-def render_tabs(views):
-    return core_templates.render('tabs.html', views=views)
-    
-def render_obj(obj, exported=None):
-    if exported == None: exported = obj.exported
-    views = [(attr, getattr(obj, attr)) for attr in exported]
-    return render_tabs(views)
-
-def render_ds(ds, head, terminal='html', sortkey=None):
-    render = globals().get('render_list_as_%s'%(terminal), None)
-    if not render:
-        return "No terminal defined for %s" % terminal
-    cols = sorted(dskeys(ds), key=sortkey)
-    cols.remove(head)
-    cols.insert(0, head)
-    return render(ds, *cols)
-
-def ds_update(ds, **kw):
-    def dupdated(d, **kw):
-        new_dict = copy.copy(d)
-        new_dict.update(kw)
-        return new_dict
-    return map(lambda d: dupdated(d, **kw), ds)
-
-def ds_sub(ds, key, expand_key, tpl, **kw):
-    def target(d, *ds):
-        env = dmerge(d, kw)
-        return msub(tpl, **env)
-    return dszip(ds, target, expand_key, key)
-    
-def ds_vrun(ds, key, expand_key, *cmd, **kw):
-    def target(d, *ds):
-        env = dmerge(d, kw)
-        return safe_popen(msub(' '.join(cmd), **env))
-    return dszip(ds, target, expand_key, key)
-
-def ds_veval(ds, key, expand_key, expr, env, **kw):
-    def target(d, *ds):
-        sub_env = dmerge(d, kw)
-        expand_expr = msub(expr, **sub_env)
-        return safe_eval(expand_expr, env)
-    return dszip(ds, target, expand_key, key)
-
 class UrlSet:
     def __init__(self, base_url):
         self.base_url = base_url
@@ -131,9 +66,18 @@ class Wiki:
         views = [('view', gen_sh_url('.', 'asciidoc --out-file=- %s'%path, False)),('edit', gen_ed_url(path))]
         return render_tabs(views)
 
-def multi_cmd_views(views, input=False):
-    def make_views(name, dir, cmd, input=input):
-        return name, gen_sh_url(dir, cmd, input)
+def _make_dir_cmd_views(dir, cmd_views):
+    def new_cmd_view(name, cmd, input_visibility=False):
+        return name, dir, cmd, input_visibility
+    return [new_cmd_view(*i) for i in cmd_views]
+
+def dir_cmd_views(dir, cmd_views, d={}, **kw):
+    cmd_views = _make_dir_cmd_views(dir, cmd_views)
+    return multi_cmd_views(cmd_views, d, **kw)
+
+def multi_cmd_views(views, d={}, **kw):
+    kw = dict_updated(kw, d)
+    def make_views(name, dir, cmd, input=False):
+        return name, gen_sh_url(dir, sub(cmd, kw), input)
     return [make_views(*v) for v in views]
     
-        

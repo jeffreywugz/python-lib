@@ -12,7 +12,7 @@ def filter_cmd_args(args, *opts):
 
 def make_cmd_args(*args, **kw):
     args_repr = [repr(arg) for arg in args]
-    kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw]
+    kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw.items()]
     return ' '.join(args_repr + kw_repr)
     
 def parse_cmd_args(args, env):
@@ -39,7 +39,7 @@ def run_cmd(env, args):
     args, opts = filter_cmd_args(args, 'init')
     init = opts.get('init', '')
     exec init in env
-    pipes = lsplit(args, '/')
+    pipes = list_split(args, '/')
     for p in pipes[1:]:
         if not (':_' in p or any([i.endswith('=:_') for i in p])):
             p.append(':_')

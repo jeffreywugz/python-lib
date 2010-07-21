@@ -1,4 +1,6 @@
 from common import *
+import cPickle
+import sqlite3
 
 def cachedMethod(func):
     def wrapper(self, *args):
@@ -27,10 +29,10 @@ class FileStoreCache:
         return self.get_store(key).check()
     
     def __getitem__(self, args):
-        return self.get_store(args).read()
+        return self.get_store(args).load()
 
     def __setitem__(self, args, result):
-        return self.get_store(args).write(result)
+        return self.get_store(args).dump(result)
     
 class DirCache:
     def __init__(self, dir, store_class):
@@ -86,7 +88,7 @@ class Log:
         values = [safe_eval(line) for line in lines]
         return filter(None, values)
 
-class SeqStore:
+class FileStore:
     def __init__(self, path):
         self.path = path
 
@@ -104,13 +106,69 @@ class SeqStore:
     def check(self):
         return self.read_meta() == 'complete'
     
-    def read(self):
+    def load(self):
         if not self.check(): return None
+        result = self.do_load()
+        return result
+        
+    def dump(self, value):
+        if os.path.exists(self.path): os.unlink(self.path)
+        self.do_dump(value)
+        self.write_meta('complete')
+
+class SeqStore(FileStore):
+    def __init__(self, path):
+        self.path = path
+
+    def do_load(self):
         with open(self.path) as f:
             lines = f.readlines()
             return [eval(i) for i in lines]
 
-    def write(self, seq):
+    def do_dump(self, f, seq):
         with open(self.path, 'w') as f:
             f.writelines([repr(i) + '\n' for i in seq])
-        self.write_meta('complete')
+
+class PickleStore(FileStore):
+    def __init__(self, path):
+        FileStore.__init__(self, path)
+
+    def do_load(self):
+        with open(self.path) as f:
+            return cPickle.load(f)
+
+    def do_dump(self, f, value):
+        with open(self.path, 'w') as f:
+            return cPickle.dump(value, f)
+    
+class DBStore(FileStore):
+    def __init__(self, path):
+        FileStore.__init__(self,path)
+
+    @staticmethod
+    def get_types(table):
+        type_map = {None:'NULL', int:'INTEGER', float:'REAL', str:'TEXT', unicode:'TEXT'}
+        seq = table[0]
+        return [type_map[type(i)] for i in seq]
+
+    def get_conn(self):
+        conn = sqlite3.connect(self.path)
+        conn.text_factory = str
+        return conn
+        
+    def do_load(self):
+        select_cmd = 'select * from main'
+        with self.get_conn() as conn:
+            return conn.execute(select_cmd)
+
+    def do_dump(self, table):
+        types = self.get_types(table)
+        create_table_cmd = 'create table main(%s)'%(', '.join(['col%d %s'%(i, type) for (i, type) in enumerate(types)]))
+        insert_cmd = "insert into main(%s) values (%s)"%(', '.join(['col%d'%i for i in range(len(types))]), ', '.join(['?']* len(types)))
+        print create_table_cmd, insert_cmd
+        with self.get_conn() as conn:
+            conn.execute(create_table_cmd)
+            conn.executemany(insert_cmd, table)
+
+        
+

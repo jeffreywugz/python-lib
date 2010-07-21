@@ -24,7 +24,7 @@ def short_repr(x):
 def traceit(func):
     def wrapper(*args, **kw):
         args_repr = [repr(arg) for arg in args]
-        kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw]
+        kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw.items()]
         full_repr = map(short_repr, args_repr + kw_repr)
         print '%s(%s)'%(func.__name__, ', '.join(full_repr))
         result = func(*args, **kw)
