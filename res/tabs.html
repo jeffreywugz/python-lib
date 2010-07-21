@@ -1,7 +1,7 @@
 <script type="text/javascript">
 function q(id) { return document.getElementById(id);}
 function resizeFrame(f) {f.style.height = f.contentDocument.body.scrollHeight + "px";}
-function hightTab(tab) {
+function hilightTab(tab) {
     var tabs = q('allTabs').getElementsByClassName('tab-ref');
     for each(var t in tabs) {
         if(t.className != 'tab-ref') continue;
@@ -13,19 +13,19 @@ function hightTab(tab) {
 }
 function selectTab(tab){
     var frame = q('tabsViewPort');
-    hightTab(tab);
+    hilightTab(tab);
     frame.src = q(tab+'.url').href;
 }
 </script>
 <div id="allTabs" class="Tabs">
-  <h3 style="background-color: DimGray">
+  <div style="background-color: DimGray; font-weight: Bold;">
     % for name, url in views:
     <a class="tab-ref" id="${name}.tab" href="javascript:selectTab('${name}')">${name}</a>
     <a id="${name}.url" style="display:none" href="${url}">self</a>
     % endfor
-  </h3>
-  <iframe width="100%" frameborder="0" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
+  </div>
+  <iframe width="100%" frameborder="0" marginwidth="2" marginheight="1" scrolling="auto" src="${views[0][1]}" id="tabsViewPort" onload="resizeFrame(q('tabsViewPort'))"></iframe>
 </div>
 <script type="text/javascript">
-hightTab('${views[0][0]}.tab');
+hilightTab('${views[0][0]}.tab');
 </script>

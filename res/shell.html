@@ -44,7 +44,9 @@ def display(visibility):
       <input type="text" class="input" name="cmd" style="width:100%" value="${cmd|x}">
         </form>
         <div class="output">
+          % if stderr:
           <pre id="shell_error" class="error">${stderr}</pre>
+          % endif
           <div id="shell_output" class="output">${stdout}</div>
         </div>
       </body>
