@@ -38,7 +38,7 @@ def flip(func):
 
 def list_flatten(li):
     if type(li) == list or type(li) == tuple:
-        return reduce(lambda x,y:x+y, map(lflatten, li), [])
+        return reduce(lambda x,y:x+y, map(list_flatten, li), [])
     else:
         return [li]
 

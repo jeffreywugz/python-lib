@@ -8,7 +8,7 @@ def render_list_as_txt(ds, *cols):
         return map(lambda x: d.get(x, None), keys)
     data = [safe_dslice(d, *cols) for d in ds]
     data = [cols] + data
-    data = map(lflatten, data)
+    data = map(list_flatten, data)
     def toStr(x):
         x = str(x)
         if x.startswith('Error:'): return 'Error'
@@ -31,11 +31,22 @@ def render_obj(obj, exported=None):
     views = [(attr, getattr(obj, attr)) for attr in exported]
     return render_tabs(views)
 
-def render_ds(ds, head, terminal='html', sortkey=None):
-    render = globals().get('render_list_as_%s'%(terminal), None)
+def render_list(ds, term, *cols):
+    render = globals().get('render_list_as_%s'%(term), None)
     if not render:
-        return "No terminal defined for %s" % terminal
-    cols = sorted(ds_keys(ds), key=sortkey)
-    cols.remove(head)
-    cols.insert(0, head)
+        return "No terminal defined for %s" % term
     return render(ds, *cols)
+
+def render_ds(ds, term='html'):
+    def keys_sorted(first, keys, key=None):
+        keys.remove(first)
+        keys = sorted(keys, key=key)
+        return [first] + keys
+    if not ds: return ''
+    cols_to_zip = ds[0].get('_cols_to_zip_') 
+    if cols_to_zip:
+        key, expanded, tpl = cols_to_zip
+        ds = ds_zip_sub(ds, key, expanded, tpl)
+        return render_list(ds, term, *keys_sorted(key, ds_keys(ds)))
+    cols_to_render = ds[0].get('_cols_to_render_')
+    return render_list(ds, term, *cols_to_render)

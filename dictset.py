@@ -18,6 +18,10 @@ def ds_keys(ds):
     keys = list_merge(*map(lambda d:d.keys(), ds))
     return list(set(keys))
 
+def ds_get_key(ds, key):
+    cols = list_sum([d.get(key, []) for d in ds])
+    return sorted(set(cols), key=lambda x: cols.index(x))
+    
 def ds_filter(ds, **kw):
     return filter(lambda d:dict_match(d, **kw), ds)
 
@@ -25,6 +29,9 @@ def ds_updated(ds, d={}, **kw):
     new_dict = dict_updated(d, kw)
     return [dict_updated(d, new_dict) for d in ds]
 
+def ds_slice(ds, *keys):
+    return [dict_make(keys, dict_slice(d, *keys)) for d in ds]
+    
 def ds_filter_by_key(ds, key, *values):
     filter(lambda d: d[key] in values, ds)
 
