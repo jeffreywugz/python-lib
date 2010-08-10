@@ -17,6 +17,9 @@ class GErr(exceptions.Exception):
     def __str__(self):
         return "%s\n%s"%(self.msg, self.obj)
 
+    def __repr__(self):
+        return 'GErr(%s, %s)'%(repr(self.msg), repr(self.obj))
+
 def short_repr(x):
     if len(x) < 80: return x
     else: return x[:80] + '...'

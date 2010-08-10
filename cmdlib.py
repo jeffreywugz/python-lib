@@ -1,5 +1,8 @@
 from common import *
 
+def cmd_arg_quote(arg):
+    return '"%s"'%(arg.replace('"', '\\"').replace('$', '\\$'))
+
 def filter_cmd_args(args, *opts):
     def getopt(arg):
         for opt in opts:
