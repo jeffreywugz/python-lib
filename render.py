@@ -37,16 +37,19 @@ def render_list(ds, term, *cols):
         return "No terminal defined for %s" % term
     return render(ds, *cols)
 
-def render_ds(ds, term='html'):
+def render_ds_simple(ds, key, term='html'):
     def keys_sorted(first, keys, key=None):
         keys.remove(first)
         keys = sorted(keys, key=key)
         return [first] + keys
+    return render_list(ds, term, *keys_sorted(key, ds_keys(ds)))
+    
+def render_ds(ds, term='html'):
     if not ds: return ''
     cols_to_zip = ds[0].get('_cols_to_zip_') 
     if cols_to_zip:
         key, expanded, tpl = cols_to_zip
         ds = ds_zip_sub(ds, key, expanded, tpl)
-        return render_list(ds, term, *keys_sorted(key, ds_keys(ds)))
+        return render_ds_simple(ds, key, term)
     cols_to_render = ds[0].get('_cols_to_render_')
     return render_list(ds, term, *cols_to_render)

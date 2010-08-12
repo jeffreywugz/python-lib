@@ -1,5 +1,5 @@
 .PHONY: all test clean
-all: test-control
+all: test-job
 test-me:
 	me echo x=1 y=2 z
 	me --init='a=[1,2,3]' a
@@ -14,5 +14,9 @@ test-msh:
 	me test_msh >tmp.html && firefox tmp.html
 test-wiki:
 	me test_wiki >tmp.html && firefox tmp.html
+test-attr:
+	me test_attr
+test-job:
+	bin/job.py ans42:a@gd[46-50]:/share/work/shell make say-hello master='$$master' -/view db=test-job.db
 clean:
 	rm -rf *.pyc */*.pyc

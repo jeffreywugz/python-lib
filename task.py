@@ -1,6 +1,7 @@
 from msite import *
 from extra import *
 from render import *
+import attr
 
 def test_control():
     numbers = dc_map(dict_merge, [dict(x=v) for v in range(3)], [dict(y=v) for v in range(3)])
@@ -8,13 +9,13 @@ def test_control():
     print render_list_as_html(numbers, 'x','y', 'product')
     print render_table(lambda x,y:x*y, range(3), range(3))
     collpsed = ds_zip(numbers, lambda d,*ds: d['x']*d['y'], 'y', 'x')
-    print render_ds(collpsed, 'x')
+    print render_ds_simple(collpsed, 'x')
     print render_list_as_html(collpsed, 'x', *range(4))
 
 def test_msh():
     hosts = dc_map(dict_merge, [dict(host='host%d'% i) for i in range(3)], [dict(user='user%d'% i) for i in range(3)])
     # msh_run(hosts, 'echo', '$host')
-    print render_ds(msh_vrun(hosts, 'host', 'user', 'echo $user@$host'), 'host')
+    print render_ds_simple(msh_vrun(hosts, 'host', 'user', 'echo $user@$host'), 'host')
              
 def test_container():
     views = [('home', '/ans42'), ('work', '/share/work')]
@@ -25,4 +26,9 @@ def test_msite():
     app = MsiteApp('.', rpc.RpcDemo(), globals())
     app.run()
 
+def test_attr():
+    a = attr.Attr()
+    a['%$protocol://$host:$port/index.html']= 'http://gc03vm3:8080/index.html'
+    print a
+    
 wiki = Wiki('.')

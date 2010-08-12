@@ -20,10 +20,10 @@ def make_cmd_args(*args, **kw):
     
 def parse_cmd_args(args, env):
     def parse_arg(arg):
-        if arg.startswith(':'): return (arg,)
-        else: return arg.split('=', 1)
+        if (not arg.startswith(':')) and re.match('\S+=', arg): return arg.split('=', 1)
+        else: return (arg,)
     def eval_arg(arg):
-        if arg.startswith(','): return arg[1:]
+        if arg.startswith('::'): return arg[1:]
         if not arg.startswith(':'): return arg
         try:
             return eval(arg[1:], env)

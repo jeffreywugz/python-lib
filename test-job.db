@@ -1,0 +1,4 @@
+# This file store vars used by bin/job.py
+gd48-ans42-passwd=special-passwd
+master=gd04
+slaves=gd[00-10]

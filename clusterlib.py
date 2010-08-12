@@ -4,10 +4,12 @@ from render import *
 
 def job_run(jobs):
     jobs = ds_updated_by_sub(jobs, expanded_cmd='$job_cmd')
+    jobs = ds_updated(jobs, _cols_to_render_=['host', 'expanded_cmd'])
     return ds_updated_by_popen(jobs,  result='$job_run_cmd')
 
 def job_view(jobs):
-    return ds_updated_by_popen(jobs, result='$job_view_cmd')
+    jobs = ds_updated_by_popen(jobs, result='$job_view_cmd')
+    return ds_updated(jobs, _cols_to_render_=['host', 'result'])
 
 job_attr = {
     'job_run_cmd':'[ -d $log_dir ] || mkdir $log_dir; ( $job_cmd )> $log_dir/$log_file 2>&1 &',
@@ -18,7 +20,6 @@ cluster_job_attr = {
     'log_file': '$host.log',
     'job_cmd':'$cluster_job_cmd',
     'cluster_job_cmd':'sshpass -p $passwd scp -r $cluster_job_dir $user@$host:; sshpass -p $passwd ssh $user@$host "cd $cluster_job_dir; $cluster_host_cmd"',
-    '_cols_to_render_': ['host', 'expanded_cmd', 'result'],
     }
 
 def make_cluster_job(profile, dir, cmd, hosts=None):
