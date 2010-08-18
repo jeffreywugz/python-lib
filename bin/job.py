@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 example usage:
-bash$ j root:111111@gd[46-50],slaves,-master:/share/work/boot make ok -/passrun db=config gd04-root-passwd=a
+bash$ job.py root:111111@gd[46-50],slaves,-master:/share/work/boot make ok -/passrun db=config gd04-root-passwd=a
 """
 
 import sys
@@ -108,7 +108,7 @@ class Job:
     def get_host_profile(self):
         return [dict(host=h, user=self.user, dir=self.dir,
                      passwd=self.env.get('%s-%s-passwd'%(h, self.user), ''),
-                     cmd=' '.join(map(cmd_arg_quote, self.cmd)),
+                     cmd=' '.join([cmd_arg_quote(sub(i, self.env)) for i in self.cmd]),
                      last_level_dir=os.path.basename(self.dir)) for h in self.hosts]
 
     def run(self):

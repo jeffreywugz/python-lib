@@ -122,7 +122,7 @@ def str2dict(template, str):
     rexp = tore(normalize(template))
     match = re.match(rexp, str)
     if not match: return {}
-    else: return match.groupdict()
+    else: return dict(match.groupdict(), __self__=str)
 
 def tpl_sub(tpl, target, str):
     env = str2dict(tpl, str)

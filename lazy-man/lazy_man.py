@@ -6,6 +6,14 @@ from subprocess import *
 
 success_target = '<success_target>'
 
+class ManyCall:
+    def __init__(self):
+        pass
+
+    def reg(self):
+        pass
+    
+        
 class LMException(exceptions.Exception):
     def __init__(self, msg, obj):
         self.msg, self.obj = msg, obj
