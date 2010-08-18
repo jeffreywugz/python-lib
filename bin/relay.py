@@ -8,6 +8,7 @@ from threading import Thread
 class Dump2(Thread):
    def __init__ (self,dest, src):
       Thread.__init__(self)
+      self.daemon = True
       self.dest = dest
       self.src = src
       
@@ -17,12 +18,14 @@ class Dump2(Thread):
           self.dest.send(buf)
 
 def relay(local_host, local_port, dest_host, dest_port):
+   print 'relay: %s:%d -> %s:%d'%(local_host, local_port, dest_host, dest_port)
    local_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
    local_socket.bind((local_host, local_port))
    local_socket.listen(1)
    while True:
       try:
          src, addr = local_socket.accept()
+         print 'connect: %s:%d'%addr
          dest = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          dest.connect((dest_host, dest_port))
          Dump2(dest, src).start()
