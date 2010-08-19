@@ -15,6 +15,9 @@ class Dump2(Thread):
    def run(self):
       while 1:
           buf = self.src.recv(1024)
+          if not buf:
+             self.src.close()
+             return
           self.dest.send(buf)
 
 def relay(local_host, local_port, dest_host, dest_port):
@@ -27,6 +30,7 @@ def relay(local_host, local_port, dest_host, dest_port):
          src, addr = local_socket.accept()
          print 'connect: %s:%d'%addr
          dest = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         dest.settimeout(30)
          dest.connect((dest_host, dest_port))
          Dump2(dest, src).start()
          Dump2(src, dest).start()
