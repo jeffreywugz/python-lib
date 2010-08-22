@@ -3,29 +3,18 @@
 import sys, os
 import exceptions
 cwd = os.path.dirname(os.path.abspath(__file__))
-sys.path.extend([os.path.join(cwd, '../lib/mako.zip')])
-from mako.template import Template
+sys.path.extend([os.path.join(cwd, '..')])
+from common import *
+import cgilib
 import cgi
 import cgitb
 import subprocess
 cgitb.enable()
 
-def safe_read(file_name):
-    try:
-        with open(file_name) as f:
-            return f.read()
-    except exceptions.IOError:
-        return ''
-
-def write(file_name, content):
-    with open(file_name, 'w') as f:
-        f.write(content)
-        
 args = cgi.FieldStorage()
-path = args.getfirst('path', '')
-content = args.getfirst('content', "")
+path, content = args.getfirst('path', ''), args.getfirst('content', "")
 if path and content:
     write(path, content)
 if not content:
     content = safe_read(path)
-print Template(filename=os.path.join(cwd, '../res/edit.html'), disable_unicode=True).render(path=path, content=content)
+print cgilib.render('res/edit.html', path=path, content=content)

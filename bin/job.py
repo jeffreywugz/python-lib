@@ -6,10 +6,14 @@ bash$ job.py root:111111@gd[46-50],slaves,-master:/share/work/boot make ok -/pas
 
 import sys
 import os, os.path
+cwd = os.path.dirname(os.path.abspath(__file__))
+sys.path.extend([os.path.join(cwd, '..')])
+from common import *
 import exceptions
+import traceback
+import pprint 
 import copy
 import string, re
-import subprocess
 
 class JobException(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -22,50 +26,10 @@ class JobException(exceptions.Exception):
     def __repr__(self):
         return 'JobException(%s, %s)'%(repr(self.msg), repr(self.obj))
 
-def safe_read(path):
-    try:
-        with open(path, 'r') as f:
-            return f.read()
-    except exceptions.IOError:
-        return ''
-
-def shell(cmd):
-    print 'shell $ %s'%cmd
-    ret = subprocess.call(cmd, shell=True)
-    sys.stdout.flush()
-    return ret
-
-def popen(cmd):
-    print 'popen $ %s'%cmd
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-    err = p.stderr.read()
-    out = p.stdout.read()
-    if p.returncode != 0 or err:
-        raise JobException('popen failed:%s\n%s'%(err, out), cmd)
-    return out
-    
-def safe_popen(cmd):
-    try:
-        return popen(cmd)
-    except JobException,e:
-        return "Error:\n" + str(e)
         
-def load_kv_config(f):
-    content = safe_read(f)
-    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
-
-def list_sum(lists):
-    result = []
-    for list in lists:
-        result.extend(list)
-    return result
-
-def sub(template, env={}, **vars):
-    return string.Template(template).safe_substitute(env, **vars)
-
 def cmd_arg_quote(arg):
-    return '"%s"'%(arg.replace('"', '\\"').replace('$', '\\$'))
+    return arg
+    # return '%s'%(arg.replace('"', '\\"'))
 
 def gen_list(*ranges):
     def parse(i):
@@ -93,24 +57,28 @@ class Job:
     def __init__(self, user, hosts, dir, cmd, env):
         self.user, self.hosts, self.dir, self.cmd, self.env = user, hosts, dir, cmd, env
         self.actions = {
-            'run': "sshpass -p '$passwd' scp -r $dir $host:; sshpass -p '$passwd' ssh $user@$host 'cd $last_level_dir; $cmd'",
-            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $host:; sshpass -p '$passwd' ssh $user@$host 'cd $last_level_dir; $cmd') >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; cd $dir; $cmd >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
+            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd') >/tmp/$last_level_dir/$host.log 2>&1 &",
             'cat': "echo -e '\n-----$host-----\n'; tail -n 100 /tmp/$last_level_dir/$host.log",
             'view':  "tail -n 100 /tmp/$last_level_dir/$host.log",
             }
 
     def shell(self, cmd):
-        return [(p['host'], shell(sub(cmd,p))) for p in self.get_host_profile()]
+        return [(p['host'], shell(msub(cmd,p))) for p in self.get_host_profile()]
 
     def popen(self, cmd):
-        return [(p['host'], safe_popen(sub(cmd,p))) for p in self.get_host_profile()]
+        return [(p['host'], safe_popen(msub(cmd,p))) for p in self.get_host_profile()]
     
     def get_host_profile(self):
         return [dict(host=h, user=self.user, dir=self.dir,
                      passwd=self.env.get('%s-%s-passwd'%(h, self.user), ''),
-                     cmd=' '.join([cmd_arg_quote(sub(i, self.env)) for i in self.cmd]),
+                     cmd=' '.join([cmd_arg_quote(msub(i, self.env)) for i in self.cmd]),
                      last_level_dir=os.path.basename(self.dir)) for h in self.hosts]
 
+    def raw(self):
+        return self.shell(self.actions['raw'])
+    
     def run(self):
         return self.shell(self.actions['run'])
     
@@ -123,8 +91,8 @@ class Job:
     def view(self):
         return ''.join(['<h3>%s</h3>\n<pre>%s</pre>\n'%(host, output) for host,output in self.popen(self.actions['view'])])
     
-    def sub(self):
-        return [sub(i, self.env) for i in self.cmd]
+    def inspect(self):
+        return self.get_host_profile()
     
     def __str__(self):
         return 'Job(user=%s, hosts=%s, dir=%s, cmds=%s, env=...)'%(self.user, self.hosts, self.dir, self.cmds)
@@ -168,7 +136,8 @@ class JobParser:
         self.cmd_vars = dict([i.split('=', 1) for i in cmd_vars])
         self.db = self.cmd_vars.get('db', self.default_db)
         self.db_vars = load_kv_config(self.db)
-        
+
+        if not job: raise JobException('Wrong Arguments')
         self.user, self.default_passwd, hosts, self.dir = parse_job(job[0])
         self.cmd = job[1:]
         self.hosts = parse_hosts(hosts, self.db_vars)
@@ -190,7 +159,20 @@ JobParser(args=%s):
 '''%(self.args, self.action, self.user, self.hosts, self.dir, self.cmd, self.db, self.db_vars, self.cmd_vars, self.env)
 
 def run_job(args):
-    args = JobParser(args)
+    try:
+        args = JobParser(args)
+    except JobException,e:
+        print e
+        print """
+Examples:
+shell $ job.py ans42:111111@gd[46-50]:boot make boot -/{action} db=config
+where action = inspect | raw | run | bg | cat | view 
+"""
+        return
+    except exceptions.Exception,e:
+        print "Internal Error"
+        print traceback.format_exc()
+        return
     job = Job(args.user, args.hosts, args.dir, args.cmd, args.env)
     return getattr(job, args.action)()
     

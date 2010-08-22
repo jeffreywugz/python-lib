@@ -1,0 +1,62 @@
+<%!
+import os.path
+%>
+<html>
+  <head>
+    <title>${path}</title>
+    <style type="text/css">
+      .input {
+          width: 100%;
+          font-size: 90%; 
+          font-family: courier, monospace;
+          font-weight: bold;
+          background-color: #FFFFFF;
+          color: #000000;
+      }
+      .error {
+          font-size: 100%;
+          color: #FF0000;
+      }
+      .output {
+          overflow:visible;
+          background-color: #F3F5F7;
+          color: #000000;
+          font-family: courier, monospace;
+          font-size: 90%;
+      }
+      </style>
+      <script language="JavaScript">
+function q(id) { return document.getElementById(id); }
+function hide(w){ w.style.display = 'none';}
+function show(w){ w.style.display = 'block';}
+function isVisible(w){ return w.style.display != 'none'; }
+function toggleVisible(w){ isVisible(w)?hide(w):show(w);}
+function getCaret(textArea) { return textArea.selectionStart; }
+function hotKeyPressed(e, key) { return e.ctrlKey && String.fromCharCode(e.charCode).toUpperCase() == key; }
+function initApp() {
+    var fileForm = document.file;
+    fileForm.content.addEventListener("keypress", function (e) { return hotKeyPressed(e, 'X') && fileFormSubmit(fileForm);}, false);
+    document.addEventListener("keypress", function (e) { return hotKeyPressed(e,'V') && toggleVisible(fileForm);}, false);
+    focus(fileForm);
+}
+
+function fileFormFocus(form) { form.content.focus(); form.content.setSelectionRange(form.caret.value, form.caret.value);}
+function fileFormSubmit(form) { form.caret.value = getCaret(form.content); form.submit(); }
+      </script>
+  </head>
+  <body onload="initApp()">
+    <form name="file" action="" method="post">
+      <input name="caret" type="hidden" value="${caret}"/>
+      <input type="submit" value="execute"/>
+      <input name="path" type="text"  class="input" style="width:80%" value="${path}"/>
+      <textarea name="content" id="content" class="input" style="width:100%; height:20%" onClick="event.ctrlKey && fileFormSubmit(document.file)">${content}</textarea>
+    </form>
+    <pre class="output" style="color:lime;background-color:black" onClick="toggleVisible(document.file)">${cmd}</pre>
+        <div class="output">
+          % if stderr:
+          <pre id="shell_error" class="error">${stderr}</pre>
+          % endif
+          <div id="shell_output" class="output">${stdout}</div>
+        </div>
+      </body>
+    </html>

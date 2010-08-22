@@ -149,6 +149,21 @@ def safe_popen(cmd):
     except GErr,e:
         return "Error:\n" + str(e)
         
+def safe_read(path):
+    try:
+        with open(path, 'r') as f:
+            return f.read()
+    except exceptions.IOError:
+        return ''
+
+def write(path, content):
+    with open(path, 'w') as f:
+        f.write(content)
+    
+def load_kv_config(f):
+    content = safe_read(f)
+    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
+
 def sub_shell(tpl, cmd, str):
     cmd = tpl_sub(tpl, cmd, str)
     print cmd

@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import sys, os
+cwd = os.path.dirname(os.path.abspath(__file__))
+sys.path.extend([os.path.join(cwd, '..')])
+from common import *
+import cgilib
+import cgi, cgitb
+cgitb.enable()
+
+def getline(content, caret):
+    start = content.rfind('\n', 0, caret) + 1
+    end = content.find('\n', caret)
+    if end == -1: end = len(content)
+    return content[start:end]
+
+args = cgi.FieldStorage()
+path, content, caret = args.getfirst('path', '/tmp/scratch'), args.getfirst('content', None), int(args.getfirst('caret', '0'))
+if path.endswith('>'):
+    path = path[:-1]
+    explict_load_req = True
+else:
+    explict_load_req = False
+if content == None or explict_load_req:
+    content = safe_read(path)
+    cursor = 0
+    cmd = 'echo "Hello Fish!"'
+else:
+    write(path, content)
+    cmd = getline(content.replace('\r\n', '\n'), caret)
+
+stdout, stderr = cgilib.popen(cmd, os.path.dirname(path))
+print cgilib.render('res/fsh.html', path=path, content=content, caret=caret, cmd=cmd, stdout=stdout, stderr=stderr)

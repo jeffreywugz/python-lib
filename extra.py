@@ -46,7 +46,7 @@ class UrlSet:
     def gen(self, url, **kw):
         return '%s/%s?%s'%(self.base_url, url, urllib.urlencode(kw))
 
-core_urls = UrlSet('/ans42/prj/python-lib/bin')
+core_urls = UrlSet('/local/python-lib/bin')
 
 def gen_sh_url(dir, cmd, input=True):
     if input: input_visibility='show'
