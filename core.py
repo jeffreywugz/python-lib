@@ -160,8 +160,10 @@ def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
     
-def load_kv_config(f):
+def load_kv_config(f, tag="_config"):
     content = safe_read(f)
+    match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
+    if match: content = match.group(1)
     return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
 
 def sub_shell(tpl, cmd, str):

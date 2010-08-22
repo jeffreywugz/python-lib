@@ -135,7 +135,7 @@ class JobParser:
         job, self.action, cmd_vars = split_by_action(self.args, self.default_action)
         self.cmd_vars = dict([i.split('=', 1) for i in cmd_vars])
         self.db = self.cmd_vars.get('db', self.default_db)
-        self.db_vars = load_kv_config(self.db)
+        self.db_vars = load_kv_config(self.db, 'job_db')
 
         if not job: raise JobException('Wrong Arguments')
         self.user, self.default_passwd, hosts, self.dir = parse_job(job[0])
