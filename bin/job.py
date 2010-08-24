@@ -6,10 +6,8 @@ bash$ job.py root:111111@gd[46-50],slaves,-master:/share/work/boot make ok -/pas
 
 import sys
 import os, os.path
-cwd = os.path.dirname(os.path.abspath(__file__))
-sys.path.extend([os.path.join(cwd, '..')])
-from common import *
 import exceptions
+import subprocess
 import traceback
 import pprint 
 import copy
@@ -27,6 +25,65 @@ class JobException(exceptions.Exception):
         return 'JobException(%s, %s)'%(repr(self.msg), repr(self.obj))
 
         
+def list_sum(lists):
+    result = []
+    for list in lists:
+        result.extend(list)
+    return result
+
+def shell(cmd):
+    ret = subprocess.call(cmd, shell=True)
+    sys.stdout.flush()
+    return ret
+
+def popen(cmd):
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.wait()
+    err = p.stderr.read()
+    out = p.stdout.read()
+    if p.returncode != 0 or err:
+        raise JobException('%s\n%s'%(err, out), cmd)
+    return out
+    
+def safe_popen(cmd):
+    try:
+        return popen(cmd)
+    except JobException,e:
+        return "Error:\n" + str(e)
+        
+def safe_read(path):
+    try:
+        f = open(path, 'r')
+        result = f.read()
+        f.close()
+        return result
+    except exceptions.IOError:
+        return ''
+
+def write(path, content):
+    f = open(path, 'w')
+    f.write(content)
+    f.close()
+    
+def load_kv_config(f, tag="_config"):
+    content = safe_read(f)
+    match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
+    if match: content = match.group(1)
+    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
+
+def sub(template, env={}, **vars):
+    return string.Template(template).safe_substitute(env, **vars)
+
+def msub(template, env={}, **kw):
+    old = ""
+    cur = template
+    new_env = copy.copy(env)
+    new_env.update(kw)
+    while cur != old:
+        old = cur
+        cur = sub(cur, new_env)
+    return cur
+
 def cmd_arg_quote(arg):
     return arg
     # return '%s'%(arg.replace('"', '\\"'))
@@ -41,7 +98,7 @@ def gen_list(*ranges):
         specifier = match.group(1)
         match = re.match('([0-9]+)-([0-9]+)', specifier)
         if not match:
-            raise GErr('illformaled range specifier', specifier)
+            raise JobException('illformaled range specifier', specifier)
         _start, _end = match.groups()
         start,end = int(_start), int(_end)
         formatter = re.sub('\[.+\]', '%0'+str(len(_start))+'d', i)

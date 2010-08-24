@@ -31,18 +31,18 @@ function hide(w){ w.style.display = 'none';}
 function show(w){ w.style.display = 'block';}
 function isVisible(w){ return w.style.display != 'none'; }
 function toggleVisible(w){ isVisible(w)?hide(w):show(w);}
-function textAreaSetHeight(textArea) { textArea.style.height = textArea.scrollHeight + "px"; }
+function setHeight(w) { w.style.height = w.scrollHeight + "px"; }
 function textAreaGetCaret(textArea) { return textArea.selectionStart; }
 function textAreaSetCaret(textArea, caret) { textArea.setSelectionRange(caret, caret);}
-function hotKeyPressed(e, key) { return e.ctrlKey && String.fromCharCode(e.charCode).toUpperCase() == key; }
+function hotKeyPressed(e, key) { return e.ctrlKey && e.altKey && String.fromCharCode(e.charCode).toUpperCase() == key; }
 
 function initApp() {
     var fileForm = document.file;
-    fileForm.content.addEventListener("keypress", function (e) { return hotKeyPressed(e, 'X') && fileFormSubmit(fileForm);}, false);
-    document.addEventListener("keypress", function (e) { return hotKeyPressed(e,';') && toggleVisible(fileForm);}, false);
+    fileForm.content.addEventListener("keypress", function (e) { return hotKeyPressed(e, 'E') && fileFormSubmit(fileForm);}, false);
+    document.addEventListener("keypress", function (e) { return hotKeyPressed(e,'H') && toggleVisible(fileForm);}, false);
     fileFormFocus(fileForm);
 }
-function fileFormFocus(form) {var ta = form.content; textAreaSetHeight(ta); ta.focus(); textAreaSetCaret(ta, form.caret.value);}
+function fileFormFocus(form) {var ta = form.content; ta.focus(); textAreaSetCaret(ta, form.caret.value);}
 function fileFormSubmit(form) { form.caret.value = textAreaGetCaret(form.content); form.submit(); }
       </script>
   </head>
@@ -50,10 +50,10 @@ function fileFormSubmit(form) { form.caret.value = textAreaGetCaret(form.content
     <form name="file" action="" method="post">
       <input name="caret" type="hidden" value="${caret}"/>
       <input type="submit" value="execute"/>
-      <input name="path" type="text"  class="input" style="width:80%" value="${path}"/>
-      <textarea name="content" id="content" class="input" style="width:100%;"  onClick="event.ctrlKey && fileFormSubmit(document.file)">${content}</textarea>
+      <input name="path" type="text"  class="input" style="width:80%;" value="${path}"/>
+      <textarea name="content" id="content" class="input" style="width:100%;height:45%"  onClick="event.ctrlKey && fileFormSubmit(document.file)">${content}</textarea>
     </form>
-    <pre class="output" style="color:lime;background-color:black" onClick="toggleVisible(document.file)">cmd: ${cmd}</pre>
+    <pre class="output" style="margin:0; color:lime;background-color:black" onClick="toggleVisible(document.file)">${cmd}</pre>
         <div class="output">
           % if stderr:
           <pre id="shell_error" class="error">${stderr}</pre>
