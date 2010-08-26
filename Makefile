@@ -1,5 +1,5 @@
 .PHONY: all test clean
-all: test-many-call
+all: test-lazy-man
 test-me:
 	me echo x=1 y=2 z
 	me --init='a=[1,2,3]' a
@@ -18,7 +18,7 @@ test-attr:
 	me test_attr
 test-job:
 	bin/job.py ans42:a@gd[46-50]:/share/work/shell make say-hello master='$$master' -/view db=test-job.db
-test-many-call:
-	./manycall.py
+test-lazy-man:
+	./lazyman.py
 clean:
 	rm -rf *.pyc */*.pyc

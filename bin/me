@@ -6,6 +6,7 @@ sys.path.extend([os.path.join(cwd, '..')])
 from pprint import pformat
 from common import *
 from extra import *
+from lazyman import *
 
 def get_default_tasks():
     top_tasks = ['top.py', '../top.py', '../../top.py'] 

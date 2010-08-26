@@ -32,11 +32,13 @@ def list_sum(lists):
     return result
 
 def shell(cmd):
+    print 'shell $ %s'%(cmd)
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
     return ret
 
 def popen(cmd):
+    print 'popen $ %s'%(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
     err = p.stderr.read()

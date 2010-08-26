@@ -30,5 +30,11 @@ def test_attr():
     a = attr.Attr()
     a['%$protocol://$host:$port/index.html']= 'http://gc03vm3:8080/index.html'
     print a
-    
+
+lm = LazyMan()
+rules = '''
+task test-lm:xxx { xx=abc; }
+    echo test-lm, $xx $yy
+'''
+lm << parse_makefile(rules)
 wiki = Wiki('.')

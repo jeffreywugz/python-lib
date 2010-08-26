@@ -119,7 +119,7 @@ def str2dict(template, str):
         return re.sub('\$(\w+)', r'${\1:\w+}', str)
     def tore(str):
         return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
-    rexp = tore(normalize(template))
+    rexp = '^%s$' % (tore(normalize(template)))
     match = re.match(rexp, str)
     if not match: return {}
     else: return dict(match.groupdict(), __self__=str)
