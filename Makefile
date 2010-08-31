@@ -1,5 +1,5 @@
 .PHONY: all test clean
-all: test-lazy-man
+all: test-sgen
 test-me:
 	me echo x=1 y=2 z
 	me --init='a=[1,2,3]' a
@@ -20,5 +20,9 @@ test-job:
 	bin/job.py ans42:a@gd[46-50]:/share/work/shell make say-hello master='$$master' -/view db=test-job.db
 test-lazy-man:
 	./lazyman.py
+test-sgen:
+	bin/sgen.py test/sgen.txt
+test-pdo:
+	bin/pdo.py '$$base\.py' echo '$$base.pyc' : *.py
 clean:
 	rm -rf *.pyc */*.pyc

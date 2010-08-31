@@ -18,6 +18,18 @@ class TagNotMatch(Exception):
         return 'Tag does not match: %s %s'%(self.begin, self.end)
 
 class Sed:
+    """
+A Stream can be splited to two types of chunks: single line or multiple line.
+Each chunk has a tag, and will be replaced by self.<tag>(content, raw_chunk) .
+Single Line Tag:
+# @tag content ...
+
+Multiple Lines Tag:
+# !<tag
+content ...
+# tag>!
+"""
+
     def __init__(self, comment='#'):
         self.comment = comment
 

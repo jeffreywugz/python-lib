@@ -1,7 +1,8 @@
 #!/usr/bin/python
 """
 example usage:
-bash$ job.py root:111111@gd[46-50],slaves,-master:/share/work/boot make ok -/passrun db=config gd04-root-passwd=a
+shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} db=config  gd04-root-passwd=a
+  where action = inspect | raw | run | bg | cat | view 
 """
 
 import sys
@@ -12,6 +13,7 @@ import traceback
 import pprint 
 import copy
 import string, re
+from common import *
 
 class JobException(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -24,67 +26,11 @@ class JobException(exceptions.Exception):
     def __repr__(self):
         return 'JobException(%s, %s)'%(repr(self.msg), repr(self.obj))
 
-        
-def list_sum(lists):
-    result = []
-    for list in lists:
-        result.extend(list)
-    return result
-
-def shell(cmd):
-    print 'shell $ %s'%(cmd)
-    ret = subprocess.call(cmd, shell=True)
-    sys.stdout.flush()
-    return ret
-
-def popen(cmd):
-    print 'popen $ %s'%(cmd)
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-    err = p.stderr.read()
-    out = p.stdout.read()
-    if p.returncode != 0 or err:
-        raise JobException('%s\n%s'%(err, out), cmd)
-    return out
-    
-def safe_popen(cmd):
-    try:
-        return popen(cmd)
-    except JobException,e:
-        return "Error:\n" + str(e)
-        
-def safe_read(path):
-    try:
-        f = open(path, 'r')
-        result = f.read()
-        f.close()
-        return result
-    except exceptions.IOError:
-        return ''
-
-def write(path, content):
-    f = open(path, 'w')
-    f.write(content)
-    f.close()
-    
 def load_kv_config(f, tag="_config"):
     content = safe_read(f)
     match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
     if match: content = match.group(1)
     return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
-
-def sub(template, env={}, **vars):
-    return string.Template(template).safe_substitute(env, **vars)
-
-def msub(template, env={}, **kw):
-    old = ""
-    cur = template
-    new_env = copy.copy(env)
-    new_env.update(kw)
-    while cur != old:
-        old = cur
-        cur = sub(cur, new_env)
-    return cur
 
 def cmd_arg_quote(arg):
     return arg
@@ -222,11 +168,7 @@ def run_job(args):
         args = JobParser(args)
     except JobException,e:
         print e
-        print """
-Examples:
-shell $ job.py ans42:111111@gd[46-50]:boot make boot -/{action} db=config
-where action = inspect | raw | run | bg | cat | view 
-"""
+        print globals()['__doc__']
         return
     except exceptions.Exception,e:
         print "Internal Error"

@@ -101,6 +101,28 @@ class BlockStream:
     def __lshift__(self, content):
         self.out(content)
         
+class Templet:
+    """Example: $abc ${abc} ${' '.join(range(3))}"""
+    def __init__(self, str):
+        self.str = str
+
+    def sub(self, env={}, **kw):
+        preprocessed = re.sub('\$(\w+)', '${\\1}', self.str) # Normalize: 'abc $foo def' => 'abc ${foo} def'
+        segments = re.split('(?s)(\${.+?})', preprocessed) # Split into Chunks: 'abc ${foo} def' => ['abc', '${foo}', 'def']
+        env.update(**kw)
+        def safe_eval(exp, env):
+            try:
+                return eval(exp, globals(), env)
+            except exceptions.Exception, e:
+                return e
+        def evil(seg):
+            if not re.match('\$', seg): # This is for Normal Chunks.
+                return seg
+            exp = re.sub('(?s)^\${(.+?)}', '\\1', seg)
+            result = safe_eval(exp, env)
+            return str(result)
+        return ''.join([evil(seg) for seg in segments])
+    
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)
 
