@@ -15,7 +15,7 @@ def getline(content, caret):
     return content[start:end]
 
 args = cgi.FieldStorage()
-path, content, caret = args.getfirst('path', '/tmp/scratch'), args.getfirst('content', '').replace('\r\n', '\n'), int(args.getfirst('caret', '0'))
+path, content, caret, scrollTop = args.getfirst('path', '/tmp/scratch'), args.getfirst('content', '').replace('\r\n', '\n'), int(args.getfirst('caret', '0')), int(args.getfirst('scrollTop', '0'))
 if path.endswith('<'):
     write(path[:-1], content)
 else:
@@ -23,4 +23,4 @@ else:
     if not content: content = "echo 'hello, fish!'"
 cmd = getline(content, caret)
 stdout, stderr = cgilib.popen(cmd, os.path.dirname(path))
-print cgilib.render('res/fsh.html', path=path, content=content, caret=caret, cmd=cmd, stdout=stdout, stderr=stderr)
+print cgilib.render('res/fsh.html', path=path, content=content, caret=caret, scrollTop=scrollTop, cmd=cmd, stdout=stdout, stderr=stderr)
