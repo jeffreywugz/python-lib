@@ -94,7 +94,16 @@ class Job:
         return self.shell(self.actions['cat'])
     
     def view(self):
-        return ''.join(['<h3>%s</h3>\n<pre>%s</pre>\n'%(host, output) for host,output in self.popen(self.actions['view'])])
+        row_pat = '''<tr>
+<td style="background:%s; color:white; font-weight:bold">%s</td>
+<td><pre>%s</pre></td>
+</tr>'''
+        def host_bg(output):
+            return output.find('JobException:') == -1 and "black" or "red"
+        def output_view(output):
+            return re.sub("(JobException:.*\n)", '<div style="color:red">\\1</div>', output, re.M)
+        result = [row_pat%(host_bg(output), host, output_view(output)) for host,output in self.popen(self.actions['view'])]
+        return "<table border=1>%s</table>" % '\n'.join(result)
     
     def inspect(self):
         return self.get_host_profile()
