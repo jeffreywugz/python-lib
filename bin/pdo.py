@@ -46,12 +46,12 @@ def pdo_run(args):
 def main(args):
     try:
         pdo_run(args)
-    except PdoException,e:
-        print e
-        print globals()['__doc__']
-    except exceptions.Exception,e:
-        print "Internal Error"
-        print traceback.format_exc()
+    except PdoException as e:
+        print(e)
+        print(globals()['__doc__'])
+    except exceptions.Exception as e:
+        print("Internal Error")
+        print(traceback.format_exc())
         return
 
 if __name__ == '__main__':

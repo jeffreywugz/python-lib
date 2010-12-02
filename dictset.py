@@ -15,7 +15,7 @@ def ds_zip(ds, target, expand_key, *key):
     return [dict_merge(dict_make(key, k), ds_collapse(v, target, expand_key)) for k,v in ds_group(ds, *key)]
 
 def ds_keys(ds):
-    keys = list_merge(*map(lambda d:d.keys(), ds))
+    keys = list_merge(*[list(d.keys()) for d in ds])
     return list(set(keys))
 
 def ds_get_key(ds, key):
@@ -23,7 +23,7 @@ def ds_get_key(ds, key):
     return sorted(set(cols), key=lambda x: cols.index(x))
     
 def ds_filter(ds, **kw):
-    return filter(lambda d:dict_match(d, **kw), ds)
+    return [d for d in ds if dict_match(d, **kw)]
 
 def ds_updated(ds, d={}, **kw):
     new_dict = dict_updated(d, kw)
@@ -33,7 +33,7 @@ def ds_slice(ds, *keys):
     return [dict_make(keys, dict_slice(d, *keys)) for d in ds]
     
 def ds_filter_by_key(ds, key, *values):
-    filter(lambda d: d[key] in values, ds)
+    [d for d in ds if d[key] in values]
 
 def ds_updated_by_sub(ds, d={}, **kw):
     kw = dict_updated(d, kw)

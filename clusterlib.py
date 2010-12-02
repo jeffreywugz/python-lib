@@ -24,7 +24,7 @@ cluster_job_attr = {
 
 def make_cluster_job(profile, dir, cmd, hosts=None):
     if hosts != None:
-        profile = filter(lambda x: x['host'] in hosts, profile)
+        profile = [x for x in profile if x['host'] in hosts]
     return ds_updated(profile, dict_merge(job_attr, cluster_job_attr), cluster_job_dir=dir, cluster_host_cmd=cmd)
 
 def cprun(profile, dir, cmd, hosts=None, host_mapping=None):
@@ -62,4 +62,4 @@ def gen_makefile_cmds(dir):
     view_cmd = "me cprun :$_profile $_dir 'view' / job_view / render_ds"
     local_view_cmd = "cat /tmp/$_dir.local"
     all_exported = ['view', 'local_view'] + exported_targets + local_exported_targets
-    return [('view', view_cmd), ('local_view', local_view_cmd)] + zip(exported_targets, exported_cmds) + zip(local_exported_targets, local_exported_cmds)
+    return [('view', view_cmd), ('local_view', local_view_cmd)] + list(zip(exported_targets, exported_cmds)) + list(zip(local_exported_targets, local_exported_cmds))

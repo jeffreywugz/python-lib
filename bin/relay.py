@@ -24,24 +24,24 @@ class Dump2(Thread):
           self.dest.send(buf)
 
 def relay(local_host, local_port, dest_host, dest_port):
-   print 'relay: %s:%d -> %s:%d'%(local_host, local_port, dest_host, dest_port)
+   print(('relay: %s:%d -> %s:%d'%(local_host, local_port, dest_host, dest_port)))
    local_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
    local_socket.bind((local_host, local_port))
    local_socket.listen(1)
    while True:
       try:
          src, addr = local_socket.accept()
-         print 'connect: %s:%d'%addr
+         print(('connect: %s:%d'%addr))
          dest = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          dest.settimeout(30)
          dest.connect((dest_host, dest_port))
          Dump2(dest, src).start()
          Dump2(src, dest).start()
-      except exceptions.KeyboardInterrupt,e:
-         print 'User Interrupt, Exit...'
+      except exceptions.KeyboardInterrupt as e:
+         print('User Interrupt, Exit...')
          return
-      except exceptions.Exception,e:
-         print e
+      except exceptions.Exception as e:
+         print(e)
 
 if __name__ == '__main__':
    def parse_arg(args):
@@ -53,6 +53,6 @@ if __name__ == '__main__':
       assert(len(dest) == 2)
       h2, p2 = dest
       return h1, int(p1), h2, int(p2)
-   print globals()['__doc__']
+   print((globals()['__doc__']))
    relay(*parse_arg(sys.argv[1:]))
       

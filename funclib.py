@@ -28,7 +28,7 @@ def unpack(func):
 
 def make_filter(func):
     def wrapper(stream, *args, **kw):
-        return itertools.imap(lambda x:func(x, *args, **kw), stream)
+        return map(lambda x:func(x, *args, **kw), stream)
     return wrapper
 
 def flip(func):
@@ -38,12 +38,12 @@ def flip(func):
 
 def list_flatten(li):
     if type(li) == list or type(li) == tuple:
-        return reduce(lambda x,y:x+y, map(list_flatten, li), [])
+        return reduce(lambda x,y:x+y, list(map(list_flatten, li)), [])
     else:
         return [li]
 
 def step_in(i, steps):
-    tail = filter(lambda x: x > i, steps)
+    tail = [x for x in steps if x > i]
     if not tail: return None
     return tail[0]
     
@@ -75,7 +75,7 @@ def dict_match(d, **pat):
     return set(pat.items()) <= set(d.items())
 
 def dict_slice(d, *keys):
-    return map(lambda x: d[x], keys)
+    return [d[x] for x in keys]
 
 def dict_updated(d, extra={}, **kw):
     new_dict = copy.copy(d)
@@ -84,11 +84,11 @@ def dict_updated(d, extra={}, **kw):
 
 def dict_updated_by_callables(d, **kw):
     new_dict = copy.copy(d)
-    new_dict.update([(k,v(**d)) for k,v in kw.items()])
+    new_dict.update([(k,v(**d)) for k,v in list(kw.items())])
     return new_dict
                   
 def dict_map(func, d):
-    return dict([(k, func(v)) for (k,v) in d.items()])
+    return dict([(k, func(v)) for (k,v) in list(d.items())])
 
 def dc_mul(*args):
     def _dcmul(a,b):
@@ -97,5 +97,5 @@ def dc_mul(*args):
 
 def dc_map(func, *args):
     list = dc_mul(*args)
-    return map(lambda x:func(*x), list)
+    return [func(*x) for x in list]
 

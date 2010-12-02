@@ -1,6 +1,6 @@
 import sys, os
+from functools import reduce
 my_lib_dir = os.path.dirname(os.path.abspath(__file__))
-import exceptions
 import copy
 import re
 import subprocess
@@ -9,9 +9,9 @@ import string
 from mako.template import Template
 from itertools import groupby
 
-class GErr(exceptions.Exception):
+class GErr(Exception):
     def __init__(self, msg, obj=None):
-        exceptions.Exception(self)
+        Exception(self)
         self.obj, self.msg = obj, msg
 
     def __str__(self):
@@ -27,11 +27,11 @@ def short_repr(x):
 def traceit(func):
     def wrapper(*args, **kw):
         args_repr = [repr(arg) for arg in args]
-        kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw.items()]
-        full_repr = map(short_repr, args_repr + kw_repr)
-        print '%s(%s)'%(func.__name__, ', '.join(full_repr))
+        kw_repr = ['%s=%s'%(k, repr(v)) for k,v in list(kw.items())]
+        full_repr = list(map(short_repr, args_repr + kw_repr))
+        print('%s(%s)'%(func.__name__, ', '.join(full_repr)))
         result = func(*args, **kw)
-        print '=> %s'%(repr(result))
+        print('=> %s'%(repr(result)))
         return result
     return wrapper
 
@@ -40,7 +40,7 @@ def timeit(func):
         start = time.time()
         result = func(*args, **kw)
         end = time.time()
-        print '%s(*%s, **%s): %ds'%(func.__name__, args, kw, end-start)
+        print('%s(*%s, **%s): %ds'%(func.__name__, args, kw, end-start))
         return result
     return wrapper
 
@@ -57,12 +57,12 @@ def mktracer(log):
 
 def print_table(table):
     for i in table:
-        print '\t'.join([str(j) for j in i])
+        print('\t'.join([str(j) for j in i]))
         
 def safe_eval(expr, env={}, default=None):
     try:
         return eval(expr, env)
-    except exceptions.Exception,e:
+    except Exception as e:
         return default
     
 class Env(dict):
@@ -113,7 +113,7 @@ class Templet:
         def safe_eval(exp, env):
             try:
                 return eval(exp, globals(), env)
-            except exceptions.Exception, e:
+            except Exception as e:
                 return e
         def evil(seg):
             if not re.match('\$', seg): # This is for Normal Chunks.
@@ -168,14 +168,14 @@ def popen(cmd):
 def safe_popen(cmd):
     try:
         return popen(cmd)
-    except GErr,e:
+    except GErr as e:
         return "Error:\n" + str(e)
         
 def safe_read(path):
     try:
         with open(path, 'r') as f:
             return f.read()
-    except exceptions.IOError:
+    except IOError:
         return ''
 
 def write(path, content):
@@ -190,7 +190,7 @@ def load_kv_config(f, tag="_config"):
 
 def sub_shell(tpl, cmd, str):
     cmd = tpl_sub(tpl, cmd, str)
-    print cmd
+    print(cmd)
     shell(cmd)
     
 def sh_sub(str):

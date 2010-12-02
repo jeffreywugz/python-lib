@@ -1,4 +1,5 @@
 from common import *
+import collections
 
 def cmd_arg_quote(arg):
     return '"%s"'%(arg.replace('"', '\\"').replace('$', '\\$'))
@@ -9,13 +10,13 @@ def filter_cmd_args(args, *opts):
             prefix = '--%s='%(opt)
             if arg.startswith(prefix): return opt, arg.replace(prefix, '')
         return None, None
-    rest_args = filter(lambda arg: getopt(arg) == (None, None), args)
+    rest_args = [arg for arg in args if getopt(arg) == (None, None)]
     kw = dict([getopt(arg) for arg in args])
     return rest_args, kw
 
 def make_cmd_args(*args, **kw):
     args_repr = [repr(arg) for arg in args]
-    kw_repr = ['%s=%s'%(k, repr(v)) for k,v in kw.items()]
+    kw_repr = ['%s=%s'%(k, repr(v)) for k,v in list(kw.items())]
     return ' '.join(args_repr + kw_repr)
     
 def parse_cmd_args(args, env):
@@ -27,9 +28,9 @@ def parse_cmd_args(args, env):
         if not arg.startswith(':'): return arg
         try:
             return eval(arg[1:], env)
-        except exceptions.Exception,e:
+        except exceptions.Exception as e:
             return GErr("arg %s eval error"%arg, e)
-    args = map(parse_arg, args)
+    args = list(map(parse_arg, args))
     args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
     args = dict(args)
     list_args = args.get(1, [])
@@ -41,7 +42,7 @@ def parse_cmd_args(args, env):
 def run_cmd(env, args):
     args, opts = filter_cmd_args(args, 'init')
     init = opts.get('init', '')
-    exec init in env
+    exec(init, env)
     pipes = list_split(args, '/')
     for p in pipes[1:]:
         if not (':_' in p or any([i.endswith('=:_') for i in p])):
@@ -56,7 +57,7 @@ def cmd_pipe_eval(env, args):
     except exceptions.IndexError:
         raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
-    if not callable(func):
+    if not isinstance(func, collections.Callable):
         if  list_args or kw_args:
             raise GErr("not callable", func)
         else:

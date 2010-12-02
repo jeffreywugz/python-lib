@@ -68,8 +68,8 @@ def sed(content, env={}, **kw):
         code = parse_seg(seg)
         if code == None: return seg
         try:
-            exec code in env
-        except exceptions.Exception,e:
+            exec(code, env)
+        except exceptions.Exception as e:
             raise SGenException('Code Exec exception', e) 
         generated = env.get('self', '')
         pat = '(?s)<<<<.*>>>>'
@@ -85,5 +85,5 @@ def sgen(f, env={}, **kw):
     
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        print globals()['__doc__']
+        print(globals()['__doc__'])
     [sgen(i) for i in sys.argv[1:]]

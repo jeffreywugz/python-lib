@@ -17,4 +17,4 @@ if path and content:
     write(path, content)
 if not content:
     content = safe_read(path)
-print cgilib.render('res/edit.html', path=path, content=content)
+print(cgilib.render('res/edit.html', path=path, content=content))

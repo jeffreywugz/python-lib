@@ -5,10 +5,10 @@ def render_list_as_html(ds, *cols):
     
 def render_list_as_txt(ds, *cols):
     def safe_dslice(d, *keys):
-        return map(lambda x: d.get(x, None), keys)
+        return [d.get(x, None) for x in keys]
     data = [safe_dslice(d, *cols) for d in ds]
     data = [cols] + data
-    data = map(list_flatten, data)
+    data = list(map(list_flatten, data))
     def toStr(x):
         x = str(x)
         if x.startswith('Error:'): return 'Error'

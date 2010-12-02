@@ -6,6 +6,8 @@ from common import *
 import traceback
 import pprint
 import copy
+import collections
+from functools import reduce
 
 class ManyCallException(exceptions.Exception):
     def __init__(self, msg, obj):
@@ -44,7 +46,7 @@ class ManyCall(object):
         self.debug = False
 
     def reg_map_func(self, func):
-        if not callable(func):
+        if not isinstance(func, collections.Callable):
             raise ManyCallException('object is not callable',  func)
         self.map_funcs.append(func)
 
@@ -53,7 +55,7 @@ class ManyCall(object):
             self.reg_map_func(f)
             
     def reg_reduce_func(self, func):
-        if not callable(func):
+        if not isinstance(func, collections.Callable):
             raise ManyCallException('object is not callable',  func)
         self.reduce_funcs.append(func)
 
@@ -63,10 +65,10 @@ class ManyCall(object):
             
     def call_func(self, f, **kw):
         try:
-            if self.debug: print 'ManyCall: func %s: args %s'%(f, kw)
+            if self.debug: print('ManyCall: func %s: args %s'%(f, kw))
             result = f(**kw)
-            if self.debug: print 'ManyCall: func %s: result %s'%(f, result)
-        except exceptions.Exception,e:
+            if self.debug: print('ManyCall: func %s: result %s'%(f, result))
+        except exceptions.Exception as e:
             raise ManyCallException('call func with exception %s'%traceback.format_exc(), (f,e))
         if type(result) != dict:
             raise ManyCallException('func %s not return a dict'%getattr(f, 'func_name', "?"), (kw, result))
@@ -74,7 +76,7 @@ class ManyCall(object):
         
     def map_call(self, **kw):
         def result_update(d, u):
-            for k,v in u.items():
+            for k,v in list(u.items()):
                 li = d.get(k, [])
                 if type(li) != list: raise ManyCallException('Internal Error: Got non list value when merge map result')
                 li.append(v)
@@ -104,13 +106,13 @@ class ManyCall(object):
         return self
 
 def keep_last(**kw):
-    return dict([(k, v[-1]) for k,v in kw.items()])
+    return dict([(k, v[-1]) for k,v in list(kw.items())])
     
 def keep_uniq(**kw):
-    return dict([(k,list(uniq(v))) for k,v in kw.items()])
+    return dict([(k,list(uniq(v))) for k,v in list(kw.items())])
                   
 def nil_action(**kw): return True
-def echo(**task): print pprint.pformat(task)
+def echo(**task): print(pprint.pformat(task))
 
 class LazyMan(ManyCall):
     def __init__(self):
@@ -153,16 +155,16 @@ def make_plan(_target, **_attr):
     def plan(target, **attr):
         d = str2dict(_target, target)
         if not d: return {}
-        new_attr = dict([(k, msub_object(v, d)) for k,v in _attr.items()])
+        new_attr = dict([(k, msub_object(v, d)) for k,v in list(_attr.items())])
         new_attr.update(d)
         return dict(attr, **dict_updated(new_attr, target=target))
     return plan
 
 def make_shell_action(cmd):
     def shell_action(**task):
-        env = dict([(k, ' '.join([str(i) for i in to_list(v)]))for k,v in task.items()])
+        env = dict([(k, ' '.join([str(i) for i in to_list(v)]))for k,v in list(task.items())])
         expanded_cmd = msub(cmd, env)
-        print 'shell $ %s'%expanded_cmd
+        print('shell $ %s'%expanded_cmd)
         ret = shell(expanded_cmd)
         if ret: raise LMException("Shell Action Failed with RetCode %d"%(ret), expanded_cmd)
     return shell_action
@@ -170,7 +172,7 @@ def make_shell_action(cmd):
 def file_task_cached(target='', deps=[], **kw):
     if not os.path.exists(target): return False
     mtime = os.path.getmtime(target)
-    file_deps = filter(lambda x: x.get('type','') == 'file', [kw.get(d, {}) for d in deps])
+    file_deps = [x for x in [kw.get(d, {}) for d in deps] if x.get('type','') == 'file']
     def newer_than_target(file):
         if not os.path.exists(file):
             raise LMException("Dep File not Exist: %s"%file, target)
@@ -183,11 +185,11 @@ def parse_rule(rule):
     match = re.match(pat, rule)
     if not match: raise LMException("Ill Formaled Task Specifier", task)
     _type, target, deps, attrs = match.groups()
-    print attrs
+    print(attrs)
     _type, deps, attrs = _type or 'file', deps or '', attrs or ''
     deps = deps.split()
     attrs = dict(re.findall('\s*([^=]+)\s*=\s*([^;]*)\s*;', attrs))
-    print 'parse_rule: %s/%s => %s | %s'%(_type, target, deps, attrs)
+    print('parse_rule: %s/%s => %s | %s'%(_type, target, deps, attrs))
     return _type, target, deps, attrs
     
 def simple_make_plan(rule, action, **_attr):

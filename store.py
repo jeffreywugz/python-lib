@@ -1,13 +1,13 @@
 from common import *
-import cPickle
+import pickle
 import sqlite3
 
 def cachedMethod(func):
     def wrapper(self, *args):
         name = func.__name__
         if not hasattr(self, 'cache'): setattr(self, 'cache', {})
-        if not self.cache.has_key(name): self.cache[name] = {}
-        if self.cache[name].has_key(args):
+        if name not in self.cache: self.cache[name] = {}
+        if args in self.cache[name]:
             result = self.cache[name][args]
         else:
             result = func(self, *args)
@@ -86,7 +86,7 @@ class Log:
     def get(self):
         lines = self.file.readlines()
         values = [safe_eval(line) for line in lines]
-        return filter(None, values)
+        return [_f for _f in values if _f]
 
 class FileStore:
     def __init__(self, path):
@@ -96,7 +96,7 @@ class FileStore:
         try:
             with open(self.path + '.meta') as f:
                 return f.read()
-        except exceptions.Exception,e:
+        except exceptions.Exception as e:
             return ""
 
     def write_meta(self, content):
@@ -135,11 +135,11 @@ class PickleStore(FileStore):
 
     def do_load(self):
         with open(self.path) as f:
-            return cPickle.load(f)
+            return pickle.load(f)
 
     def do_dump(self, f, value):
         with open(self.path, 'w') as f:
-            return cPickle.dump(value, f)
+            return pickle.dump(value, f)
     
 class DBStore(FileStore):
     def __init__(self, path):
@@ -147,7 +147,7 @@ class DBStore(FileStore):
 
     @staticmethod
     def get_types(table):
-        type_map = {None:'NULL', int:'INTEGER', float:'REAL', str:'TEXT', unicode:'TEXT'}
+        type_map = {None:'NULL', int:'INTEGER', float:'REAL', str:'TEXT', str:'TEXT'}
         seq = table[0]
         return [type_map[type(i)] for i in seq]
 
@@ -165,7 +165,7 @@ class DBStore(FileStore):
         types = self.get_types(table)
         create_table_cmd = 'create table main(%s)'%(', '.join(['col%d %s'%(i, type) for (i, type) in enumerate(types)]))
         insert_cmd = "insert into main(%s) values (%s)"%(', '.join(['col%d'%i for i in range(len(types))]), ', '.join(['?']* len(types)))
-        print create_table_cmd, insert_cmd
+        print(create_table_cmd, insert_cmd)
         with self.get_conn() as conn:
             conn.execute(create_table_cmd)
             conn.executemany(insert_cmd, table)

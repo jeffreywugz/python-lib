@@ -7,16 +7,15 @@ shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} d
 
 import sys
 import os, os.path
-import exceptions
 import subprocess
 import traceback
 import pprint 
 import copy
 import string, re
 
-class GErr(exceptions.Exception):
+class GErr(Exception):
     def __init__(self, msg, obj=None):
-        exceptions.Exception(self)
+        Exception(self)
         self.obj, self.msg = obj, msg
 
     def __str__(self):
@@ -25,9 +24,9 @@ class GErr(exceptions.Exception):
     def __repr__(self):
         return 'GErr(%s, %s)'%(repr(self.msg), repr(self.obj))
     
-class JobException(exceptions.Exception):
+class JobException(Exception):
     def __init__(self, msg, obj=None):
-        exceptions.Exception(self)
+        Exception(self)
         self.obj, self.msg = obj, msg
 
     def __str__(self):
@@ -74,7 +73,7 @@ def load_kv_config(f, tag="_config"):
         try:
             with open(path, 'r') as f:
                 return f.read()
-        except exceptions.IOError:
+        except IOError:
             return ''
     content = safe_read(f)
     match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
@@ -122,15 +121,15 @@ class Job:
         def safe_shell(cmd):
             try:
                 return shell(cmd)
-            except GErr,e:
-                print "JobException: shell failed" + str(e)
+            except GErr as e:
+                print("JobException: shell failed" + str(e))
         return [(p['host'], safe_shell(msub(cmd,p))) for p in self.get_host_profile()]
 
     def popen(self, cmd):
         def safe_popen(cmd):
             try:
-                return popen(cmd)
-            except GErr,e:
+                return popen(cmd).decode('utf-8')
+            except GErr as e:
                 return "JobException: popen failed" + str(e)
         return [(p['host'], safe_popen(msub(cmd,p))) for p in self.get_host_profile()]
     
@@ -235,16 +234,16 @@ JobParser(args=%s):
 def run_job(args):
     try:
         args = JobParser(args)
-    except JobException,e:
-        print e
-        print globals()['__doc__']
+    except JobException as e:
+        print(e)
+        print(globals()['__doc__'])
         return
-    except exceptions.Exception,e:
-        print "Internal Error"
-        print traceback.format_exc()
+    except Exception as e:
+        print("Internal Error")
+        print(traceback.format_exc())
         return
     job = Job(args.user, args.hosts, args.dir, args.cmd, args.env)
     return getattr(job, args.action)()
     
 if __name__ == '__main__':
-    print run_job(sys.argv[1:])
+    print(run_job(sys.argv[1:]))

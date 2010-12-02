@@ -1,6 +1,7 @@
 from common import *
 from render import *
-import urllib
+import urllib.request, urllib.parse, urllib.error
+from functools import reduce
 
 def gen_list(*ranges):
     def parse(i):
@@ -12,7 +13,7 @@ def gen_list(*ranges):
         if end != None: end = end[1:]
         if end == None or end == '' : end = start + 1
         else: end = int(end)
-        return type, range(start, end)
+        return type, list(range(start, end))
     ranges = [parse(i) for i in ranges]
     included = [r for t, r in ranges if t == '+']
     excluded = [r for t, r in ranges if t == '-']
@@ -44,7 +45,7 @@ class UrlSet:
         self.base_url = base_url
 
     def gen(self, url, **kw):
-        return '%s/%s?%s'%(self.base_url, url, urllib.urlencode(kw))
+        return '%s/%s?%s'%(self.base_url, url, urllib.parse.urlencode(kw))
 
 core_urls = UrlSet('/local/python-lib/bin')
 

@@ -1,5 +1,4 @@
 import os, os.path
-import exceptions
 import re
 from glob import glob
 from mako.template import Template
