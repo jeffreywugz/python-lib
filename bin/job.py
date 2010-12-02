@@ -13,8 +13,18 @@ import traceback
 import pprint 
 import copy
 import string, re
-from common import *
 
+class GErr(exceptions.Exception):
+    def __init__(self, msg, obj=None):
+        exceptions.Exception(self)
+        self.obj, self.msg = obj, msg
+
+    def __str__(self):
+        return "%s\n%s"%(self.msg, self.obj)
+
+    def __repr__(self):
+        return 'GErr(%s, %s)'%(repr(self.msg), repr(self.obj))
+    
 class JobException(exceptions.Exception):
     def __init__(self, msg, obj=None):
         exceptions.Exception(self)
@@ -24,9 +34,48 @@ class JobException(exceptions.Exception):
         return "%s\n%s"%(self.msg, self.obj)
 
     def __repr__(self):
-        return 'JobException(%s, %s)'%(repr(self.msg), repr(self.obj))
+        return 'JobException: %s: %s'%(repr(self.msg), repr(self.obj))
+
+def shell(cmd):
+    ret = subprocess.call(cmd, shell=True)
+    sys.stdout.flush()
+    if ret != 0: raise GErr('ShellError', ret)
+
+def popen(cmd):
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.wait()
+    err = p.stderr.read()
+    out = p.stdout.read()
+    if p.returncode != 0 or err:
+        raise GErr('%s\n%s'%(err, out), cmd)
+    return out
+    
+def list_sum(lists):
+    result = []
+    for list in lists:
+        result.extend(list)
+    return result
+
+def sub(template, env={}, **vars):
+    return string.Template(template).safe_substitute(env, **vars)
+
+def msub(template, env={}, **kw):
+    old = ""
+    cur = template
+    new_env = copy.copy(env)
+    new_env.update(kw)
+    while cur != old:
+        old = cur
+        cur = sub(cur, new_env)
+    return cur
 
 def load_kv_config(f, tag="_config"):
+    def safe_read(path):
+        try:
+            with open(path, 'r') as f:
+                return f.read()
+        except exceptions.IOError:
+            return ''
     content = safe_read(f)
     match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
     if match: content = match.group(1)
@@ -62,17 +111,27 @@ class Job:
     def __init__(self, user, hosts, dir, cmd, env):
         self.user, self.hosts, self.dir, self.cmd, self.env = user, hosts, dir, cmd, env
         self.actions = {
-            'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; cd $dir; $cmd >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'raw': "([ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
-            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd') >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'; if [ $? == 0 ]; then echo JobSuccess: ssh-cmd; else echo JobException: ssh-cmd;fi ) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'cat': "echo -e '\n-----$host-----\n'; tail -n 100 /tmp/$last_level_dir/$host.log",
             'view':  "tail -n 100 /tmp/$last_level_dir/$host.log",
             }
 
     def shell(self, cmd):
-        return [(p['host'], shell(msub(cmd,p))) for p in self.get_host_profile()]
+        def safe_shell(cmd):
+            try:
+                return shell(cmd)
+            except GErr,e:
+                print "JobException: shell failed" + str(e)
+        return [(p['host'], safe_shell(msub(cmd,p))) for p in self.get_host_profile()]
 
     def popen(self, cmd):
+        def safe_popen(cmd):
+            try:
+                return popen(cmd)
+            except GErr,e:
+                return "JobException: popen failed" + str(e)
         return [(p['host'], safe_popen(msub(cmd,p))) for p in self.get_host_profile()]
     
     def get_host_profile(self):
@@ -99,7 +158,8 @@ class Job:
 <td><pre>%s</pre></td>
 </tr>'''
         def host_bg(output):
-            return output.find('JobException:') == -1 and "black" or "red"
+            bg_colors = (('green', 'black'), ('red', 'red'))
+            return bg_colors[output.find('JobException:') != -1][output.find('JobSuccess:') != -1]
         def output_view(output):
             return re.sub("(JobException:.*\n)", '<div style="color:red">\\1</div>', output, re.M)
         result = [row_pat%(host_bg(output), host, output_view(output)) for host,output in self.popen(self.actions['view'])]
