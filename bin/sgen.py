@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 """
+sgen which means `stream generator', can be used to filter text stream
+typical usage include: code generation, config file generation ...
 Usage: sgen.py foo.txt ...
 """
 import sys
@@ -81,8 +83,7 @@ def sgen(f, env={}, **kw):
     new = sed(old, env, **kw)
     return update_file(f, new)
     
-def main(args):
-    [sgen(i) for i in args]
-    
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    if len(sys.argv) <= 1:
+        print globals()['__doc__']
+    [sgen(i) for i in sys.argv[1:]]

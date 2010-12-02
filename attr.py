@@ -2,6 +2,13 @@
 from common import *
 
 class Attr(object):
+    """
+    Example:
+    >>> a = Attr()
+    >>> a['%$protocol://$host:$port/index.html']= 'http://gc03vm3:8080/index.html'
+    >>> [a.protocol, a.host, a.port]
+    ['http', 'gc03vm3', '8080']
+    """
     def __init__(self, d={}, **kw):
         self.dict = dict(d, **kw)
 

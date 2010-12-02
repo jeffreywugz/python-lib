@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+"""
+relay.py can be used to forward local host TCP connection to remote host
+Usage: relay local_host:local_port dest_host:dest_port
+"""
 import sys
 import exceptions
 import socket
@@ -50,6 +53,6 @@ if __name__ == '__main__':
       assert(len(dest) == 2)
       h2, p2 = dest
       return h1, int(p1), h2, int(p2)
-   print "relay local_host:local_port dest_host:dest_port"
+   print globals()['__doc__']
    relay(*parse_arg(sys.argv[1:]))
       

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 """
+pdo which means `pattern do', can be use to do some operation based on a seqence of strings
 Usage: pdo '$base.png' echo '$base.jpg' : *.png
 """
 import sys
