@@ -26,18 +26,36 @@
       <script type="text/javascript">
         var path = getQueryArgs().path || '/tmp/scratch';
         document.title = 'fsh: ' + path;
-        var fileForm = document.file;
         var py = new pyRpc();
+        var popen;
 
+        function load(path){ return py.get(path, {}) || '# use this as scratch';}
+        function save(path, content){return py.set(path, content, {});}
+        function parse(content, caret){
+            [s, e] = [content.lastIndexOf("\n", caret-1), content.indexOf("\n", caret)];
+            return content.substring(s+1, e!=-1? e: content.length);
+        }
+        
+        function execute() {
+            save(path, $F('content'));
+            curLine = parse($F('content'), textAreaGetCaret($('content')));
+            popen(curLine);
+        }
+        
         function initApp() {
-            installShell(eval, $("debug_panel"))('path');
+            $('content').value = load(path);
+            installHotKey(top, 'h', function(w) toggleVisible(document.file));
+            installHotKey(top, 'e', function(w) execute());
+            popen = installShell(function(expr) py.popen(expr,{}), $('shell'));
+            var shell = $('shell');
+            $s(shell, 'input').addEventListener('click', function(e) e.ctrlKey && toggleVisible(document.file), false);
         }
       </script>
   </head>
   <body onload="initApp()">
-    <div id="debug_panel"></div>
     <form name="file" action="" method="post">
-      <textarea name="content" id="content" class="input" style="width:100%;height:25">${content}</textarea>
+      <textarea name="content" id="content" class="input" style="width:100%;height:25%" onClick="event.ctrlKey && execute()">${content}</textarea>
     </form>
+    <div id="shell"></div>
   </body>
 </html>

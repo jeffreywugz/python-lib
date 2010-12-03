@@ -17,6 +17,7 @@ window.onerror = onerror;
 
 // DOM element operation
 function $(id){ return document.getElementById(id);}
+function $F(id){ return $(id).value;}
 function $c(w, c){ return [x for each(x in w.childNodes) if(x.className == c)];}
 function $s(w, c){ return $c(w, c)[0];}
 function insertAfter(parent, node, referenceNode){ parent.insertBefore(node, referenceNode.nextSibling);}
@@ -81,18 +82,18 @@ pyRpc.prototype.__noSuchMethod__ = function(name, args){
     return _pyRpc(this.url, name, args.slice(0,-1), args[args.length-1]);
 }
 
-// shell is intented for debug using
+// shell is used as a widget
 function shell(interp, panel, expr, result, error) {
-    result.innerHTML = "";
+    result.innerHTML = '<div style="background-color: gold"><blink>executing</blink></div>';
     error.innerHTML = "";
 
     try{
         resultMsg = interp(expr);
         if(typeof(resultMsg) != "string")
             resultMsg = JSON.stringify(resultMsg);
-        result.innerHTML = resultMsg;
+        result.innerHTML = resultMsg || "no output";
     }catch(e){
-        show(panel);
+        //show(panel);
         errMsg = e.toString();
         if(e.stack != undefined)
             errMsg += "\n" + e.stack.toString();
@@ -101,10 +102,10 @@ function shell(interp, panel, expr, result, error) {
 }
 
 function _installShell(interp, panel, input, output, error){
-    installHotKeys(top, {'i': function(w) input.focus(), 'h': function(w) toggleVisible(panel)});
+    installHotKey(top, 'i', function(w) input.focus());
     overrideEnterKey(input, function(w) shell(interp, panel, input.value, output, error));
     input.focus();
-    return function(expr)  input.value = expr && shell(interp, panel, expr, output, error);
+    return function(expr)  { input.value = expr; shell(interp, panel, expr, output, error);};
 }
 
 function installShell(interp, panel) {

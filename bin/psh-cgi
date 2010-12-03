@@ -30,8 +30,11 @@ def popen(cmd):
     return out
     
 def get(path):
-    with open(path) as f:
-        return f.read()
+    try:
+        with open(path) as f:
+            return f.read()
+    except IOError as e:
+        return ''
     
 def set(path, content):
     with open(path, 'w') as f:
