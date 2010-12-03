@@ -80,7 +80,7 @@ function httpRawAsyncCall(url, args, handler, faultHandler){
     }
     args = encodeQueryString(args);
     url += "?" + args;
-    http.open("GET", url, false);
+    http.open("GET", url, true);
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     http.setRequestHeader("Content-length", args.length);
     http.setRequestHeader("Connection", "close");
