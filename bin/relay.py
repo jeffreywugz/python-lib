@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 """
 relay.py can be used to forward local host TCP connection to remote host
 Usage: relay local_host:local_port dest_host:dest_port

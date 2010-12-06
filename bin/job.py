@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 """
 example usage:
 shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} db=config  gd04-root-passwd=a
@@ -7,15 +7,16 @@ shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} d
 
 import sys
 import os, os.path
+import exceptions
 import subprocess
 import traceback
 import pprint 
 import copy
 import string, re
 
-class GErr(Exception):
+class GErr(exceptions.Exception):
     def __init__(self, msg, obj=None):
-        Exception(self)
+        exceptions.Exception(self)
         self.obj, self.msg = obj, msg
 
     def __str__(self):
@@ -24,9 +25,9 @@ class GErr(Exception):
     def __repr__(self):
         return 'GErr(%s, %s)'%(repr(self.msg), repr(self.obj))
     
-class JobException(Exception):
+class JobException(exceptions.Exception):
     def __init__(self, msg, obj=None):
-        Exception(self)
+        exceptions.Exception(self)
         self.obj, self.msg = obj, msg
 
     def __str__(self):
@@ -238,7 +239,7 @@ def run_job(args):
         print(e)
         print(globals()['__doc__'])
         return
-    except Exception as e:
+    except exceptions.Exception as e:
         print("Internal Error")
         print(traceback.format_exc())
         return

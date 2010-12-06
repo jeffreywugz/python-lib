@@ -17,7 +17,7 @@ test-wiki:
 test-attr:
 	me test_attr
 test-job:
-	bin/job.py ans42:a@gd[46-50]:/share/work/shell make say-hello master='$$master' -/view db=test-job.db
+	bin/job.py ans42:a@gd[46-50]:test ls -/bg
 test-lazy-man:
 	./lazyman.py
 test-sgen:
