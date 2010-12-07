@@ -1,0 +1,19 @@
+.input {
+    width: 100%;
+    font-size: 90%; 
+    font-family: courier, monospace;
+    font-weight: bold;
+    background-color: #FFFFFF;
+    color: #000000;
+}
+.error {
+    font-size: 100%;
+    color: #FF0000;
+}
+.output {
+    overflow:visible;
+    background-color: #F3F5F7;
+    color: #000000;
+    font-family: courier, monospace;
+    font-size: 90%;
+}

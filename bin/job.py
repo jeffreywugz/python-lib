@@ -37,11 +37,13 @@ class JobException(exceptions.Exception):
         return 'JobException: %s: %s'%(repr(self.msg), repr(self.obj))
 
 def shell(cmd):
+    #print "shell:%s" % cmd
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
     if ret != 0: raise GErr('ShellError', ret)
 
 def popen(cmd):
+    #print "popen:%s" % cmd
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
     err = p.stderr.read()
@@ -111,7 +113,7 @@ class Job:
     def __init__(self, user, hosts, dir, cmd, env):
         self.user, self.hosts, self.dir, self.cmd, self.env = user, hosts, dir, cmd, env
         self.actions = {
-            'raw': "([ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
             'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'; if [ $? == 0 ]; then echo JobSuccess: ssh-cmd; else echo JobException: ssh-cmd;fi ) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'cat': "echo -e '\n-----$host-----\n'; tail -n 100 /tmp/$last_level_dir/$host.log",

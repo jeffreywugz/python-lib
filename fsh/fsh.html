@@ -1,29 +1,9 @@
 <html>
   <head>
     <title>${path}</title>
-    <style type="text/css">
-      .input {
-          width: 100%;
-          font-size: 90%; 
-          font-family: courier, monospace;
-          font-weight: bold;
-          background-color: #FFFFFF;
-          color: #000000;
-      }
-      .error {
-          font-size: 100%;
-          color: #FF0000;
-      }
-      .output {
-          overflow:visible;
-          background-color: #F3F5F7;
-          color: #000000;
-          font-family: courier, monospace;
-          font-size: 90%;
-      }
-      </style>
-      <script type="text/javascript" src="common.js"></script>
-      <script type="text/javascript">
+    <link rel="stylesheet" type="text/css" href="fsh.css"/>
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript">
         var path = getQueryArgs().path || '/tmp/scratch';
         document.title = 'fsh: ' + path;
         var py = new pyRpc();
@@ -44,18 +24,16 @@
         
         function initApp() {
             $('content').value = load(path);
-            installHotKey(top, 'h', function(w) toggleVisible(document.file));
+            installHotKey(top, 'h', function(w) toggleVisible($('content')));
             installHotKey(top, 'e', function(w) execute());
             popen = installShell(function(expr) py.popen(expr,{}), $('shell'));
             var shell = $('shell');
-            $s(shell, 'input').addEventListener('click', function(e) e.ctrlKey && toggleVisible(document.file), false);
+            $s(shell, 'input').addEventListener('click', function(e) e.ctrlKey && toggleVisible($('content')), false);
         }
-      </script>
+    </script>
   </head>
   <body onload="initApp()">
-    <form name="file" action="" method="post">
-      <textarea name="content" id="content" class="input" style="width:100%;height:25%" onClick="event.ctrlKey && execute()">${content}</textarea>
-    </form>
+    <textarea name="content" id="content" class="input" style="width:100%;height:25%" onClick="event.ctrlKey && execute()">${content}</textarea>
     <div id="shell"></div>
   </body>
 </html>

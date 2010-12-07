@@ -13,7 +13,7 @@ function encodeQueryString(args){ return [k + "=" + encodeURIComponent(args[k].t
 function obj2QueryString(obj){return encodeQueryString(dictMap(function(v)JSON.stringify(v), obj));}
 function error_format(msg, url, lineno){ return repr([msg, url, lineno]);}
 function onerror(msg, url, lineno) { alert(error_format(msg, url, lineno)); return true;}
-window.onerror = onerror;
+// window.onerror = onerror;
 
 // DOM element operation
 function $(id){ return document.getElementById(id);}
@@ -74,7 +74,7 @@ function _pyRpc(url, func, args, kw){
 }
 
 function pyRpc(url){
-    this.url = url || '/local/python-lib/bin/psh.cgi';
+    this.url = url || 'psh.cgi';
 }
 
 pyRpc.prototype.__noSuchMethod__ = function(name, args){
