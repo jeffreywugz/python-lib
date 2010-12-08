@@ -78,12 +78,11 @@ function pyRpc(url){
 }
 
 pyRpc.prototype.__noSuchMethod__ = function(name, args){
-    args = args || [{}];
-    return _pyRpc(this.url, name, args.slice(0,-1), args[args.length-1]);
+    return _pyRpc(this.url, name, [], args? args[0]: {});
 }
 
 // shell is used as a widget
-function shell(interp, panel, expr, result, error) {
+function shExecute(interp, panel, expr, result, error) {
     result.innerHTML = '<div style="background-color: gold"><blink>executing</blink></div>';
     error.innerHTML = "";
 
@@ -92,25 +91,32 @@ function shell(interp, panel, expr, result, error) {
         if(typeof(resultMsg) != "string")
             resultMsg = JSON.stringify(resultMsg);
         result.innerHTML = resultMsg || "no output";
+        return true;
     }catch(e){
         //show(panel);
         errMsg = e.toString();
         if(e.stack != undefined)
             errMsg += "\n" + e.stack.toString();
         error.innerHTML = errMsg;
+        result.innerHTML = "error"
+        return false;
     }
 }
 
-function _installShell(interp, panel, input, output, error){
+function installShell(interp, panel, input, output, error){
     installHotKey(top, 'i', function(w) input.focus());
     overrideEnterKey(input, function(w) shell(interp, panel, input.value, output, error));
     input.focus();
-    return function(expr)  { input.value = expr; shell(interp, panel, expr, output, error);};
+    return function(expr)  { input.value = expr; return shell(interp, panel, expr, output, error);};
 }
 
-function installShell(interp, panel) {
+function shell(interp, panel) {
     panel.innerHTML = '<input type="text" class="input"/><pre class="error"></pre><pre class="output"></pre>';
-    return _installShell(interp, panel, $s(panel, 'input'), $s(panel,'output'), $s(panel, 'error'));
+    this.execute = installShell(interp, panel, $s(panel, 'input'), $s(panel,'output'), $s(panel, 'error'));
 }
 
 function catInterp(expr){ alert(expr); return expr; }
+
+function fsh(interp, panel) {
+    pannel.innerHTML = '<textarea name="content" class="input">${content}</textarea>';
+}

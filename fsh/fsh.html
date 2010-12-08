@@ -8,32 +8,65 @@
         document.title = 'fsh: ' + path;
         var py = new pyRpc();
         var popen;
+        var filter;
+        var timer;
 
-        function load(path){ return py.get(path, {}) || '# use this as scratch';}
-        function save(path, content){return py.set(path, content, {});}
-        function parse(content, caret){
+        function load(path){ return py.get({path:path}) || '# use this as scratch';}
+        function save(path, content){return py.set({path:path, content:content});}
+        function get_global_inline_js(content) {
+            return [ i.substring('#js:'.length) for each(i in content.match(/#js:.*$/gm))];
+        }
+        function get_local_inline_js(line){ var match = line.match(/#ljs:(.*)$/); return match? match[1]: '';}
+        function get_cur_line(content, caret){
             [s, e] = [content.lastIndexOf("\n", caret-1), content.indexOf("\n", caret)];
             return content.substring(s+1, e!=-1? e: content.length);
         }
-        
+        function preprocess(content, caret){
+            filter = function(line, file) [typeof(i)=="number"? i*1000: line.replace('$js_sub', i) for each(i in _seq_)];
+            eval(get_global_inline_js(content).join(';'));
+            cur_line = get_cur_line(content, caret);
+            eval(get_local_inline_js(cur_line));
+            return filter(cur_line, content);
+        }
         function execute() {
             save(path, $F('content'));
-            curLine = parse($F('content'), textAreaGetCaret($('content')));
-            popen(curLine);
+            $("js_err").innerHTML = "";
+            tasks = [];
+            clearTimeout(timer);
+            try{
+                tasks = preprocess($F('content'), textAreaGetCaret($('content')));
+            }catch(e){
+                $("js_err").innerHTML = e.stack? e.toString() + "\n" + e.stack.toString(): e.toString();
+            }
+            function step(tasks){
+                if(!tasks || !tasks.length)return;
+                var timeout;
+                var t = tasks[0];
+                if(typeof(t) == "number"){
+                    timeout = t;
+                } else {
+                    timeout = 10;
+                    if(!popen(t))return;
+                }
+                timer = setTimeout(function() step(tasks.slice(1)), timeout);
+            }
+            step(tasks);
         }
         
         function initApp() {
             $('content').value = load(path);
             installHotKey(top, 'h', function(w) toggleVisible($('content')));
             installHotKey(top, 'e', function(w) execute());
-            popen = installShell(function(expr) py.popen(expr,{}), $('shell'));
+            installFsh(function(line, file) alert(line), $('fsh'));
+            popen = (new shell(function(expr) py.popen({cmd:expr}), $('shell'))).execute;
             var shell = $('shell');
             $s(shell, 'input').addEventListener('click', function(e) e.ctrlKey && toggleVisible($('content')), false);
         }
     </script>
   </head>
   <body onload="initApp()">
+    <div id="fsh">${fsh}</div>
     <textarea name="content" id="content" class="input" style="width:100%;height:25%" onClick="event.ctrlKey && execute()">${content}</textarea>
-    <div id="shell"></div>
+    <div id="shell">${shell}</div>
   </body>
 </html>
