@@ -18,22 +18,22 @@ def safe_read(path):
 def get_ext(name):
     return name[name.rfind('.')+1:]
 
-def is_image(name):
-    return get_ext(name) in ['png', 'gif', 'jpg']
+file_types = [
+    ['image', ('png', 'gif', 'jpg'), lambda name: '<img src="%s" alt="%s"/>'%(name, "image not found!")],
+    ['embed', ('svg', 'swf'), lambda name: '<embed src="%s"/>'%(name)],
+    ['csv', ('csv'), lambda name: '<table border="1">%s</table>' % '\n'.join(
+            ['<tr>%s</tr>'% '\n'.join(['<td>%s</td>'%cell for cell in row.split(',')]) for row in safe_read(name).split('\n')])],
+    ['text', ('txt'), lambda name: '<pre>%s</pre>'% safe_read(name)],
 
-def is_embed(name):
-    return get_ext(name) in ['svg', 'swf']
+]
 
-def file_view(name):
-    if is_embed(name):
-        return '<embed src="%s"/>'%(name)
-    elif is_image(name):
-        return '<img src="%s" alt="%s"/>'%(name, "image not found!")
-    else:
-        return '<pre>%s</pre>'% safe_read(name)
-
+def file_render(name):
+    for type_def, suffix, render in file_types:
+        if get_ext(name) in suffix:
+            return render(name)
+    return "unknown file type!"
 
 def view_files(file_list):
-    return ''.join(['<div><h2>%s</h2><div>%s</div></div>'%(f, file_view(f)) for f in file_list])
+    return ''.join(['<div><h2>%s</h2><div>%s</div></div>'%(f, file_render(f)) for f in file_list])
 
 print view_files(sys.argv[1:])

@@ -4,15 +4,20 @@ function dictMap(f, d){ return dict([k, f(v)] for each([k,v] in Iterator(d))); }
 
 // string related
 function repr(obj) {return JSON.stringify(obj);}
+function str(obj){ return typeof obj == 'string'? obj: repr(obj);}
 String.prototype.format = function() this.replace(/\{(\d+)\}/g, function(m,i) arguments[i])
+String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(pat, i): i for each(i in seq)]
+function basename(path) path.replace(/.*\//, '')
+function dirname(path) path.replace(/\/[^\/]*$/, '')
 
 //global environment
 function getQueryArgs(){ return parseQueryString(location.search.substring(1));}
 function parseQueryString(query){ return dict(p.match(/([^=]+)=(.*)/).slice(1) for each(p in query.split('&')) if(p));}
 function encodeQueryString(args){ return [k + "=" + encodeURIComponent(args[k].toString()) for(k in args)].join('&');}
 function obj2QueryString(obj){return encodeQueryString(dictMap(function(v)JSON.stringify(v), obj));}
-function error_format(msg, url, lineno){ return repr([msg, url, lineno]);}
-function onerror(msg, url, lineno) { alert(error_format(msg, url, lineno)); return true;}
+function errorFormat(msg, url, lineno){ return repr([msg, url, lineno]);}
+function exceptionFormat(e){ return e? e.toString() + '\n' + str(e.stack): "";}
+function onerror(msg, url, lineno) { alert(errorFormat(msg, url, lineno)); return true;}
 // window.onerror = onerror;
 
 // DOM element operation
@@ -30,11 +35,31 @@ function scrollTo(w, top){ w.scrollTop = top; }
 function textAreaGetCaret(textArea){ return textArea.selectionStart; }
 function textAreaSetCaret(textArea, caret){ textArea.setSelectionRange(caret, caret);}
 
-// hot key related
-function hotKeyPressed(e, key){ return e.ctrlKey && e.altKey && String.fromCharCode(e.charCode).toUpperCase() == key.toUpperCase();}
-function installHotKey(w, key, handler){ w.addEventListener("keypress", function(e) hotKeyPressed(e, key) && handler(w), false);}
-function installHotKeys(w, bindings){ for(name in bindings) installHotKey(w, name, bindings[name]);}
-function overrideEnterKey(w, handler){ w.addEventListener('keypress', function(e) e.which==13 && handler(w), false);}
+// hot key/click related
+function parseHotKey(key){
+    var funcKeys = {backspace:8, tab:9, enter:13, pause:19, escape:27, space:32,
+                   pageup:33, pagedown:34, end:35, home:36, left:37, up:38, right:39, down:40,
+                   print:44, insert:45, del:46,
+                   f1:112, f2:113, f3:114, f4:115, f5:116, f6:117, f7:118, f8:119, f9:120, f10:121, f11:122, f12:123,
+                   numlock:144, scrolllock:145,};
+    function km(pat){ var m = key.toLowerCase().match(pat); return m? m[0]: null;}
+    return {ctrl:km('ctrl'), alt:km('alt'), shift:km('shift'), button: km(/button[0-9]$/), wheel: km(/wheel$/),
+            key: km(/\W[a-zA-Z]$/), func: funcKeys[km(/\w+$/)]};
+}
+
+function isHotKey(e, key){
+    var k = parseHotKey(key);
+    return (!k.ctrl || e.ctrlKey) && (!k.alt || e.altKey) && (!k.shift || e.shiftKey)
+        && (!k.key || k.key.toUpperCase() == String.fromCharCode(e.charCode).toUpperCase())
+        && (!k.func || k.func == e.which)
+        && (!k.button || parseInt(k.button.substr(-1)) == e.button)
+        && (k.key || k.func || k.button || k.wheel);
+}
+
+function hotKeyType(key) key.match('wheel$')? 'DOMMouseScroll': key.match('button[0-9]$')? 'click': 'keypress'
+
+function bindHotKey(w, key, handler) w.addEventListener(hotKeyType(key), function(e) isHotKey(e, key) && handler(e), false)
+function bindHotKeys(w, bindings)[bindHotKey(w, name, bindings[name]) for(name in bindings)]
 
 // rpc stuff
 function _httpSend(http, content){
@@ -73,50 +98,89 @@ function _pyRpc(url, func, args, kw){
     return result;
 }
 
-function pyRpc(url){
+function PyRpc(url){
     this.url = url || 'psh.cgi';
 }
 
-pyRpc.prototype.__noSuchMethod__ = function(name, args){
+PyRpc.prototype.__noSuchMethod__ = function(name, args){
     return _pyRpc(this.url, name, [], args? args[0]: {});
 }
 
-// shell is used as a widget
-function shExecute(interp, panel, expr, result, error) {
-    result.innerHTML = '<div style="background-color: gold"><blink>executing</blink></div>';
-    error.innerHTML = "";
+// ComPyRpc means `common PyRpc'
+function ComPyRpc(pyRpc){ this.pyRpc = (pyRpc || new PyRpc());}
+ComPyRpc.prototype.id = function() this.pyRpc.id({});
+ComPyRpc.prototype.get = function(path) this.pyRpc.get({path:path});
+ComPyRpc.prototype.set = function(path, content) this.pyRpc.set({path:path, content:content});
+ComPyRpc.prototype.popen = function(cmd, path) this.pyRpc.popen({cmd:cmd, path:path});
 
+function safeCall(func, arg) {
+    var result, exception;
     try{
-        resultMsg = interp(expr);
-        if(typeof(resultMsg) != "string")
-            resultMsg = JSON.stringify(resultMsg);
-        result.innerHTML = resultMsg || "no output";
-        return true;
+        result = func(arg);
     }catch(e){
-        //show(panel);
-        errMsg = e.toString();
-        if(e.stack != undefined)
-            errMsg += "\n" + e.stack.toString();
-        error.innerHTML = errMsg;
-        result.innerHTML = "error"
-        return false;
+        exception = e;
     }
+    return [result, exception]
 }
 
-function installShell(interp, panel, input, output, error){
-    installHotKey(top, 'i', function(w) input.focus());
-    overrideEnterKey(input, function(w) shell(interp, panel, input.value, output, error));
+function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [str(ret), exceptionFormat(err)]
+function dumpCall(func, arg, _ret, _err){ var [ret, err] = safeCall(func, arg);  return dump2html(ret, err, _ret, _err);}
+function mkDumper(func, _ret, _err) function(arg) dumpCall(func, arg, _ret, _err)
+
+// lish means `line shell'
+function _lish(interp, input) {
+    bindHotKey(top, 'ctrl-alt-i', function(e) input.focus());
+    bindHotKey(input, 'enter', function(e) interp(e.target.value));
     input.focus();
-    return function(expr)  { input.value = expr; return shell(interp, panel, expr, output, error);};
+    return function(expr) interp(input.value=expr.trim());
 }
 
-function shell(interp, panel) {
+function lish(interp, panel) {
     panel.innerHTML = '<input type="text" class="input"/><pre class="error"></pre><pre class="output"></pre>';
-    this.execute = installShell(interp, panel, $s(panel, 'input'), $s(panel,'output'), $s(panel, 'error'));
+    return _lish(mkDumper(interp, $s(panel,'output'), $s(panel, 'error')) , $s(panel, 'input'));
 }
 
-function catInterp(expr){ alert(expr); return expr; }
+// fish means `file shell'
+function getCurLine(content, caret){
+    [s, e] = [content.lastIndexOf("\n", caret-1), content.indexOf("\n", caret)];
+    return content.substring(s+1, e!=-1? e: content.length);
+}
+function filterLines(content, tag) [i.substring(tag.length) for each(i in content.match(RegExp(tag+'.*$', 'gm')))]
+function filterLine(content, tag) filterLines(content, tag)[0]
 
-function fsh(interp, panel) {
-    pannel.innerHTML = '<textarea name="content" class="input">${content}</textarea>';
+function fishHandle(interp, input){
+    line = getCurLine(input.value, textAreaGetCaret(input));
+    return interp(line, input.value);
+}
+
+function _fish(interp, input) {
+    bindHotKey(top, 'ctrl-alt-h', function(e) toggleVisible(input));
+    bindHotKey(input, 'ctrl-alt-e', function(e) fishHandle(interp, e.target));
+    bindHotKey(input, 'ctrl-button0', function(e) fishHandle(interp, e.target));
+    return function(expr, full) interp(expr, input.value=full);
+}
+
+function fish(interp, panel, filter, id) {
+    panel.innerHTML = '<pre class="status"></pre><textarea name="content" class="input" rows="12">${content}</textarea><div class="lish"></div>';
+    var sched = new Scheduler();
+    sched.onExecute = function(tasks) $s(panel, 'status').innerHTML = id + ': ' + repr(tasks.map(taskFormat));
+    filter = filter || function(line, content) line;
+    sh = lish(interp, $s(panel, 'lish'));
+    bindHotKey($s(panel, 'status'), 'button0', function(e) toggleVisible($s(panel, 'input')));
+    bindHotKey($s(panel, 'input'), 'ctrl-wheel', function(e){ e.target.rows += 4*e.detail; e.preventDefault();});
+    return _fish(function(line, content) sched.execute(mkTasks(filter(line, content), sh)), $s(panel, 'input'));
+}
+
+function mkTasks(seq, func) [typeof(i)=='number'? [null, null, i]: [func, i, 10] for each(i in seq)]
+function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
+function Scheduler(){}
+Scheduler.prototype.cancel = function() clearTimeout(this.timer);
+Scheduler.prototype.execute = function(tasks){
+    this.onExecute && this.onExecute(tasks);
+    this.cancel();
+    if(!tasks || !tasks.length)return;
+    var [func, arg, delay] = tasks[0];
+    if(func && !func(arg))return;
+    self = this;
+    this.timer = setTimeout(function() self.execute(tasks.slice(1)), delay);
 }
