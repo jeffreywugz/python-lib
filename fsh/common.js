@@ -1,12 +1,22 @@
 // algorithmic
 function dict(pairs){ var result = {}; for each([k,v] in pairs) result[k] = v;  return result;}
 function dictMap(f, d){ return dict([k, f(v)] for each([k,v] in Iterator(d))); }
+function range(start, stop, step){
+    if(start == undefined)return;
+    if(stop == undefined){ start = 0; stop = start; }
+    if(step == undefined)step = 1;
+    for(var i = start; i < stop; i++)yield i;
+}
+function repeat(n, x){ for (var i=0; i<n; i++)yield x; }
+function repeat2arr(n, x) genArr(repeat(n, x))
+function arrScale(arr,n) Array.concat.apply([], repeat2arr(n, arr))
+function genArr(g) [i for each(i in g)]
 
 // string related
 function repr(obj) {return JSON.stringify(obj);}
 function str(obj){ return typeof obj == 'string'? obj: repr(obj);}
-String.prototype.format = function() this.replace(/\{(\d+)\}/g, function(m,i) arguments[i])
-String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(pat, i): i for each(i in seq)]
+String.prototype.format = function() this.replace(/\{(\d+)\}/g, function(m,i) arguments[i]);
+String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(pat, i): i for each(i in seq)];
 function basename(path) path.replace(/.*\//, '')
 function dirname(path) path.replace(/\/[^\/]*$/, '')
 
@@ -150,28 +160,29 @@ function filterLine(content, tag) filterLines(content, tag)[0]
 
 function fishHandle(interp, input){
     line = getCurLine(input.value, textAreaGetCaret(input));
-    return interp(line, input.value);
+    return interp(line, input.value, textAreaGetCaret(input));
 }
 
 function _fish(interp, input) {
     bindHotKey(top, 'ctrl-alt-h', function(e) toggleVisible(input));
     bindHotKey(input, 'ctrl-alt-e', function(e) fishHandle(interp, e.target));
     bindHotKey(input, 'ctrl-button0', function(e) fishHandle(interp, e.target));
-    return function(expr, full) interp(expr, input.value=full);
+    return function(expr, full) interp(expr, full != undefined? input.value=full: input.value);
 }
 
 function fish(interp, panel, filter, id) {
     panel.innerHTML = '<pre class="status"></pre><textarea name="content" class="input" rows="12">${content}</textarea><div class="lish"></div>';
     var sched = new Scheduler();
     sched.onExecute = function(tasks) $s(panel, 'status').innerHTML = id + ': ' + repr(tasks.map(taskFormat));
-    filter = filter || function(line, content) line;
+    filter = filter || function(line, content) [line];
     sh = lish(interp, $s(panel, 'lish'));
     bindHotKey($s(panel, 'status'), 'button0', function(e) toggleVisible($s(panel, 'input')));
     bindHotKey($s(panel, 'input'), 'ctrl-wheel', function(e){ e.target.rows += 4*e.detail; e.preventDefault();});
-    return _fish(function(line, content) sched.execute(mkTasks(filter(line, content), sh)), $s(panel, 'input'));
+    return _fish(function(line, content, caret) sched.execute(mkTasks(filter(line, content, caret), sh)), $s(panel, 'input'));
 }
 
-function mkTasks(seq, func) [typeof(i)=='number'? [null, null, i]: [func, i, 10] for each(i in seq)]
+// use seq.map to makesure seq is an array instead of a string.
+function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null, i]: [func, i, 10])
 function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
 function Scheduler(){}
 Scheduler.prototype.cancel = function() clearTimeout(this.timer);

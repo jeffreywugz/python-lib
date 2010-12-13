@@ -2,22 +2,29 @@
   <head>
     <title>${path}</title>
     <link rel="stylesheet" type="text/css" href="fsh.css"/>
-    <script type="text/javascript" src="common.js"></script>
-    <script type="text/javascript">
+    <script type="application/javascript;version=1.8" src="common.js"></script>
+    <script type="application/javascript;version=1.8">
         var path = getQueryArgs().path || '/tmp/scratch';
         document.title = 'fsh: ' + path;
         var rpc = new ComPyRpc();
-        var globalJsTag = '#js:', localJsTag = '#ljs:';
-        var _filter = function(line, content) [line];
+        var globalJsTag = '#js:', localJsTag = '#ljs:', jsvTag = /\$jsv(?:{(.+)})?/;
         var handler = function(cmd) rpc.popen(cmd, dirname(path));
-        var _jobSeqFilter = function(cmd) [1000, cmd.replace(/(make [^.]+)\.[^ ]+/, '$1.view')]
+        var _jsv_ = "";
+        var jobSeqFilter = function(cmd){
+            var m = cmd.match(jsvTag);
+            if(!m)return [cmd];
+            var seq = [parseInt(i)*1000 || i for each(i in (m[1] || _jsv_ || '').split(','))];
+            return cmd.seqSub(jsvTag, seq);
+        }
+        var trivialFilter = function(line, content) [line];
+        var _filter_ = jobSeqFilter;
 
-        function filter(line, content) {
+        function filter(line, content, caret) {
             rpc.set(path, content);
-            eval(filterLines(content, globalJsTag).join(';'));
+            eval(filterLines(content.substring(0, caret), globalJsTag).join(';'));
             eval(filterLine(line, localJsTag));
-            //return line.match(jsVarTag)? line.seqSub(jsVarTag, _seq_): [line]; 
-            return _filter(line, content);
+            if(typeof _filter_ != 'function')_filter_ = jobSeqFilter;
+            return _filter_(line, content) || [];
         }
         
         function initApp() {
