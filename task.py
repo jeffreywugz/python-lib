@@ -1,7 +1,4 @@
-from msite import *
-from extra import *
 from render import *
-import attr
 
 def test_control():
     numbers = dc_map(dict_merge, [dict(x=v) for v in range(3)], [dict(y=v) for v in range(3)])
@@ -22,19 +19,3 @@ def test_container():
     print(render_panels(views))
     print(render_tabs(views))
 
-def test_msite():
-    app = MsiteApp('.', rpc.RpcDemo(), globals())
-    app.run()
-
-def test_attr():
-    a = attr.Attr()
-    a['%$protocol://$host:$port/index.html']= 'http://gc03vm3:8080/index.html'
-    print(a)
-
-lm = LazyMan()
-rules = '''
-task test-lm:xxx { xx=abc; }
-    echo test-lm, $xx $yy
-'''
-lm << parse_makefile(rules)
-wiki = Wiki('.')

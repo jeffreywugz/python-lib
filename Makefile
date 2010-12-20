@@ -12,14 +12,8 @@ test-container:
 	me test_container >tmp.html && firefox tmp.html
 test-msh:
 	me test_msh >tmp.html && firefox tmp.html
-test-wiki:
-	me test_wiki >tmp.html && firefox tmp.html
-test-attr:
-	me test_attr
 test-job:
 	bin/job.py ans42:a@gd[46-50]:test ls -/bg
-test-lazy-man:
-	./lazyman.py
 test-sgen:
 	bin/sgen.py test/sgen.txt
 test-pdo:

@@ -5,17 +5,20 @@ function range(start, stop, step){
     if(start == undefined)return;
     if(stop == undefined){ start = 0; stop = start; }
     if(step == undefined)step = 1;
-    for(var i = start; i < stop; i++)yield i;
+    for(var i = start; i < stop; i += step)yield i;
 }
 function repeat(n, x){ for (var i=0; i<n; i++)yield x; }
 function repeat2arr(n, x) genArr(repeat(n, x))
 function arrScale(arr,n) Array.concat.apply([], repeat2arr(n, arr))
+function arrCat() Array.concat.apply([], arguments)
 function genArr(g) [i for each(i in g)]
+function rand(n) Math.floor(Math.random()*(n+1))
+function randChoice(seq) seq[rand(seq.length)]
 
 // string related
 function repr(obj) {return JSON.stringify(obj);}
 function str(obj){ return typeof obj == 'string'? obj: repr(obj);}
-String.prototype.format = function() this.replace(/\{(\d+)\}/g, function(m,i) arguments[i]);
+String.prototype.format = function()let(dict=arguments[0]) this.replace(/{(\w+)}/g, function(m,k) dict[k])
 String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(pat, i): i for each(i in seq)];
 function basename(path) path.replace(/.*\//, '')
 function dirname(path) path.replace(/\/[^\/]*$/, '')
@@ -171,7 +174,7 @@ function _fish(interp, input) {
 }
 
 function fish(interp, panel, filter, id) {
-    panel.innerHTML = '<pre class="status"></pre><textarea name="content" class="input" rows="12">${content}</textarea><div class="lish"></div>';
+    panel.innerHTML = '<textarea name="content" class="input" rows="12">${content}</textarea><pre class="status"></pre><div class="lish"></div>';
     var sched = new Scheduler();
     sched.onExecute = function(tasks) $s(panel, 'status').innerHTML = id + ': ' + repr(tasks.map(taskFormat));
     filter = filter || function(line, content) [line];

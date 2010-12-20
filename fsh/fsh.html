@@ -21,6 +21,7 @@
 
         function filter(line, content, caret) {
             rpc.set(path, content);
+            _filter_ = jobSeqFilter;
             eval(filterLines(content.substring(0, caret), globalJsTag).join(';'));
             eval(filterLine(line, localJsTag));
             if(typeof _filter_ != 'function')_filter_ = jobSeqFilter;

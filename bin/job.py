@@ -42,14 +42,20 @@ def shell(cmd):
     sys.stdout.flush()
     if ret != 0: raise GErr('ShellError', ret)
 
+# def popen(cmd):
+#     print "popen:%s" % cmd
+#     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#     p.wait()
+#     err = p.stderr.read()
+#     out = p.stdout.read()
+#     if p.returncode != 0 or err:
+#         raise GErr('%s\n%s'%(err, out), cmd)
+#     return out
 def popen(cmd):
-    #print "popen:%s" % cmd
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-    err = p.stderr.read()
-    out = p.stdout.read()
-    if p.returncode != 0 or err:
-        raise GErr('%s\n%s'%(err, out), cmd)
+    stdin, stdout_stderr = os.popen4(cmd)
+    stdin.close()
+    out = stdout_stderr.read()
+    stdout_stderr.close()
     return out
     
 def list_sum(lists):
@@ -131,7 +137,7 @@ class Job:
     def popen(self, cmd):
         def safe_popen(cmd):
             try:
-                return popen(cmd).decode('utf-8')
+                return popen(cmd)
             except GErr as e:
                 return "JobException: popen failed" + str(e)
         return [(p['host'], safe_popen(msub(cmd,p))) for p in self.get_host_profile()]

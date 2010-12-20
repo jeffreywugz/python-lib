@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 """
 pdo which means `pattern do', can be use to do some operation based on a seqence of strings
@@ -40,6 +40,7 @@ def pdo_run(args):
     cmd =  ' '.join(cmd)
     for i in items:
         env = str2dict(pat, i)
+        if not env: continue
         _cmd = sub(cmd, env)
         shell(_cmd)
         
