@@ -136,7 +136,9 @@ function safeCall(func, arg) {
     return [result, exception]
 }
 
-function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [str(ret), exceptionFormat(err)]
+function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 5
+function preHtml(s) isHtml(s)? s: '<pre>' + s + '</pre>'
+function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [preHtml(str(ret)), exceptionFormat(err)]
 function dumpCall(func, arg, _ret, _err){ var [ret, err] = safeCall(func, arg);  return dump2html(ret, err, _ret, _err);}
 function mkDumper(func, _ret, _err) function(arg) dumpCall(func, arg, _ret, _err)
 
@@ -149,7 +151,7 @@ function _lish(interp, input) {
 }
 
 function lish(interp, panel) {
-    panel.innerHTML = '<input type="text" class="input"/><pre class="error"></pre><pre class="output"></pre>';
+    panel.innerHTML = '<input type="text" class="input"/><pre class="error"></pre><div class="output"></div>';
     return _lish(mkDumper(interp, $s(panel,'output'), $s(panel, 'error')) , $s(panel, 'input'));
 }
 

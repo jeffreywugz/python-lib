@@ -1,94 +1,32 @@
 from common import *
+import exceptions
 import pickle
 import sqlite3
 
-def cachedMethod(func):
-    def wrapper(self, *args):
-        name = func.__name__
-        if not hasattr(self, 'cache'): setattr(self, 'cache', {})
-        if name not in self.cache: self.cache[name] = {}
-        if args in self.cache[name]:
-            result = self.cache[name][args]
-        else:
-            result = func(self, *args)
-            self.cache[name][args] = result
-        return result
-    return wrapper
+"""Example:
+def square(x):
+    print 'square(%d)'% x
+    return x*x
 
-class FileStoreCache:
-    def __init__(self, prefix, store_class):
-        self.prefix, self.store_class = prefix, store_class
+cached_square = quick_make_cached_func(square)
+cached_square(3)
+cached_square(3)
+"""
 
-    def gen_path(self, args):
-        return self.prefix + '-'.join([str(i) for i in args])
-
-    def get_store(self, args):
-        return self.store_class(self.gen_path(args))
-        
-    def has_key(self, key):
-        return self.get_store(key).check()
+def quick_make_cached_func(func, path=None, key=lambda x:x):
+    if path == None: path = '/tmp/' + func.__name__
+    return make_cached_func(MapWrapper(FileStore(path, eval, repr)), key, func)
     
-    def __getitem__(self, args):
-        return self.get_store(args).load()
+def cached_call(map_store, key, func, *args, **kw):
+    k = key(*args, **kw)
+    if not map_store.has_key(k):
+        map_store[k] = func(*args, **kw)
+    return map_store[k]
 
-    def __setitem__(self, args, result):
-        return self.get_store(args).dump(result)
-    
-class DirCache:
-    def __init__(self, dir, store_class):
-        self.dir, self.store_class = dir, store_class
+def make_cached_func(store, key, func):
+    return lambda *args, **kw: cached_call(store, key, func, *args, **kw)
 
-    def get_store(self, name):
-        return FileStoreCache(os.path.join(self.dir, name), self.store_class)
-
-    def has_key(self, key):
-        return True
-    
-    def __getitem__(self, name, default=None):
-        return self.get_store(name)
-
-    def __setitem__(self, name, result):
-        raise exceptions.KeyError('Not allowed')
-            
-
-class Store:
-    def __init__(self, path, default_value=None):
-        self.path, self.default_value = path, default_value
-
-    def set(self, value):
-        with open(self.path, 'w') as f:
-            f.write(repr(value))
-
-    def get(self):
-        try:
-            with open(self.path) as f:
-                value = eval(f.read())
-        except exceptions.IOError:
-            return self.default_value
-        return value
-
-class Log:
-    def __init__(self, path):
-        self.path = path
-        self.file = open(path, 'a+', 1)
-
-    def __del__(self):
-        self.file.close()
-        
-    def clear(self):
-        pass
-    
-    def record(self, *fields):
-        list = [time.time()]
-        list.extend(fields)
-        self.file.write(repr(list)+'\n')
-
-    def get(self):
-        lines = self.file.readlines()
-        values = [safe_eval(line) for line in lines]
-        return [_f for _f in values if _f]
-
-class FileStore:
+class JournaledStore:
     def __init__(self, path):
         self.path = path
 
@@ -113,35 +51,45 @@ class FileStore:
         
     def dump(self, value):
         if os.path.exists(self.path): os.unlink(self.path)
+        self.write_meta('in progress')
         self.do_dump(value)
         self.write_meta('complete')
 
-class SeqStore(FileStore):
-    def __init__(self, path):
-        self.path = path
+class FileStore(JournaledStore):
+    def __init__(self, path, loads, dumps):
+        self.path, self.loads, self.dumps = path, loads, dumps
+        JournaledStore.__init__(self, path)
 
     def do_load(self):
         with open(self.path) as f:
-            lines = f.readlines()
-            return [eval(i) for i in lines]
+            return self.loads(f.read())
 
-    def do_dump(self, f, seq):
+    def do_dump(self, value):
         with open(self.path, 'w') as f:
-            f.writelines([repr(i) + '\n' for i in seq])
+            return f.write(self.dumps(value))
 
-class PickleStore(FileStore):
-    def __init__(self, path):
-        FileStore.__init__(self, path)
+class MapWrapper:
+    def __init__(self, store):
+        self.store = store
 
-    def do_load(self):
-        with open(self.path) as f:
-            return pickle.load(f)
-
-    def do_dump(self, f, value):
-        with open(self.path, 'w') as f:
-            return pickle.dump(value, f)
+    def get(self):
+        return self.store.load() or {}
     
-class DBStore(FileStore):
+    def set(self, d):
+        return self.store.dump(d)
+    
+    def has_key(self, key):
+        return self.get().has_key(key)
+    
+    def __getitem__(self, key):
+        return self.get()[key]
+
+    def __setitem__(self, key, value):
+        d = self.get()
+        d[key] = value
+        return self.set(d)
+    
+class DBStore(JournaledStore):
     def __init__(self, path):
         FileStore.__init__(self,path)
 
@@ -170,5 +118,18 @@ class DBStore(FileStore):
             conn.execute(create_table_cmd)
             conn.executemany(insert_cmd, table)
 
-        
+class DirMapStore:
+    def __init__(self, dir, file_store_maker):
+        self.dir, self.file_store_maker = dir, file_store_maker
 
+    def get_store(self, name):
+        return self.file_store_maker(os.path.join(self.dir, name))
+
+    def has_key(self, key):
+        return True
+    
+    def __getitem__(self, name, default=None):
+        return self.get_store(name)
+
+    def __setitem__(self, name, result):
+        raise exceptions.KeyError('Not allowed')

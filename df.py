@@ -23,7 +23,7 @@ class DF(object):
     """
     def __init__(self, info=_print):
         self.fs = []
-        self.info = _print
+        self.info = info
 
     def reg(self, f):
         if not callable(f): raise DFExp('object is not callable',  f)
@@ -40,10 +40,17 @@ class DF(object):
             if r != None:
                 self.log('f => %s'% r)
                 return r
+        self.log('f => None')
         
     def __call__(self, **kw):
         return self.call(**kw)
 
+    def safe_call(self, **kw):
+        try:
+            return self.call(**kw)
+        except exceptions.Exception,e:
+            return None
+        
     def __lshift__(self, f):
         return self.reg(f)
 
@@ -57,11 +64,20 @@ def df_test():
     print f(op='add', x=2, y=3) # 5
     print f(op='mul', x=2, y=3) # 6
 
-def mkf(match, proto, action, args):
-    def f(**_args):
-        __args = match(proto, _args)
-        if not __args: return None
-        return action(**dict(args, **__args))
+
+def df_match(proto, args):
+    if dict_match(args, **proto): return args
+    else: return {}
+
+def df_prepare(self, deps, args):
+    return dict(dict_map(lambda dep: self(**dict(args, **dep)), deps), **args)
+    
+def mkf(match, proto, prepare, deps, action, static):
+    def f(self, **in_args):
+        _in_args = match(proto, in_args)
+        if not _in_args: return None
+        act_args = prepare(self, deps, _in_args)
+        return action(**dict(static, **act_args))
     return f
 
 if __name__ == '__main__':

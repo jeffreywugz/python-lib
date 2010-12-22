@@ -1,4 +1,5 @@
 from render import *
+from df import *
 
 def test_control():
     numbers = dc_map(dict_merge, [dict(x=v) for v in range(3)], [dict(y=v) for v in range(3)])

@@ -182,12 +182,6 @@ def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
     
-def load_kv_config(f, tag="_config"):
-    content = safe_read(f)
-    match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
-    if match: content = match.group(1)
-    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
-
 def sub_shell(tpl, cmd, str):
     cmd = tpl_sub(tpl, cmd, str)
     print(cmd)
@@ -197,4 +191,31 @@ def sh_sub(str):
     exprs = re.findall(str, '`([^`])`')
     return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)
 
+def load_kv_config(f, tag="_config"):
+    content = safe_read(f)
+    match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
+    if match: content = match.group(1)
+    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
+
+class Log:
+    def __init__(self, path):
+        self.path = path
+        self.file = open(path, 'a+', 1)
+
+    def __del__(self):
+        self.file.close()
+        
+    def clear(self):
+        pass
+    
+    def record(self, *fields):
+        list = [time.time()]
+        list.extend(fields)
+        self.file.write(repr(list)+'\n')
+
+    def get(self):
+        lines = self.file.readlines()
+        values = [safe_eval(line) for line in lines]
+        return [_f for _f in values if _f]
+    
 core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))

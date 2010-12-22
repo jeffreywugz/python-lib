@@ -47,11 +47,11 @@ def step_in(i, steps):
     if not tail: return None
     return tail[0]
     
-def list_sum(lists):
-    result = []
-    for list in lists:
-        result.extend(list)
-    return result
+# def list_sum(lists):
+#     result = []
+#     for list in lists:
+#         result.extend(list)
+#     return result
 
 def list_merge(*l):
     return reduce(lambda a,b: list(a)+list(b), l, [])
@@ -75,20 +75,26 @@ def dict_match(d, **pat):
     return set(pat.items()) <= set(d.items())
 
 def dict_slice(d, *keys):
-    return [d[x] for x in keys]
+    return [d.get(x) for x in keys]
 
-def dict_updated(d, extra={}, **kw):
+def dict_map(func, d):
+    return dict([(k, func(v)) for (k,v) in list(d.items())])
+
+def dict_trans(d, **kw):
+    def call_or_not(v, d):
+        if callable(v): return v(**d)
+        else: return d
+    return dict_map(lambda v: call_or_not(v, d), kw)
+    
+def _dict_updated(d, extra={}, **kw):
     new_dict = copy.copy(d)
     new_dict.update(extra, **kw)
     return new_dict
 
-def dict_updated_by_callables(d, **kw):
-    new_dict = copy.copy(d)
-    new_dict.update([(k,v(**d)) for k,v in list(kw.items())])
-    return new_dict
-                  
-def dict_map(func, d):
-    return dict([(k, func(v)) for (k,v) in list(d.items())])
+def dict_updated(d, extra={}, **kw):
+    new_dict = dict_trans(d, **_dict_updated(extra, kw))
+    new_dict = _dict_updated(d, new_dict)
+    return _dict_updated(new_dict, new_dict.get('_inline_', {}))
 
 def dc_mul(*args):
     def _dcmul(a,b):
