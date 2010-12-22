@@ -94,7 +94,7 @@ def _dict_updated(d, extra={}, **kw):
 def dict_updated(d, extra={}, **kw):
     new_dict = dict_trans(d, **_dict_updated(extra, kw))
     new_dict = _dict_updated(d, new_dict)
-    return _dict_updated(new_dict, new_dict.get('_inline_', {}))
+    return _dict_updated(new_dict, new_dict.get('_inline_') or {})
 
 def dc_mul(*args):
     def _dcmul(a,b):

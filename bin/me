@@ -2,7 +2,7 @@
 
 import sys, os
 cwd = os.path.dirname(os.path.realpath(__file__))
-sys.path.extend([os.path.join(cwd, '..')])
+sys.path.extend([cwd, os.path.join(cwd, '..')])
 import exceptions
 from pprint import pformat
 from common import *

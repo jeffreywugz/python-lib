@@ -1,6 +1,5 @@
 #!/usr/bin/python2
 
-import sys
 """
 vfiles means `view files'
 Usage: vfiles.py file_list
@@ -24,7 +23,7 @@ file_types = [
     ['csv', ('csv'), lambda name: '<table border="1">%s</table>' % '\n'.join(
             ['<tr>%s</tr>'% '\n'.join(['<td>%s</td>'%cell for cell in row.split(',')]) for row in safe_read(name).split('\n')])],
     ['text', ('txt'), lambda name: '<pre>%s</pre>'% safe_read(name)],
-
+    ['html', ('html'), lambda name: safe_read(name)],
 ]
 
 def file_render(name):
@@ -33,7 +32,9 @@ def file_render(name):
             return render(name)
     return "unknown file type!"
 
-def view_files(file_list):
+def view_files(*file_list):
     return ''.join(['<div><h2>%s</h2><div>%s</div></div>'%(f, file_render(f)) for f in file_list])
 
-print view_files(sys.argv[1:])
+if __name__ == '__main__':
+    import sys
+    print view_files(*sys.argv[1:])

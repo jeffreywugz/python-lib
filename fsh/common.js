@@ -187,7 +187,7 @@ function fish(interp, panel, filter, id) {
 }
 
 // use seq.map to makesure seq is an array instead of a string.
-function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null, i]: [func, i, 10])
+function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null, i]: [func, i, 0])
 function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
 function Scheduler(){}
 Scheduler.prototype.cancel = function() clearTimeout(this.timer);

@@ -8,24 +8,31 @@ def square(x):
     print 'square(%d)'% x
     return x*x
 
-cached_square = quick_make_cached_func(square)
-cached_square(3)
-cached_square(3)
+_square = CachedFunc(square)
+_square(3)
+_square(3)
+_square.invalid(3)
+_square(3)
 """
 
-def quick_make_cached_func(func, path=None, key=lambda x:x):
-    if path == None: path = '/tmp/' + func.__name__
-    return make_cached_func(MapWrapper(FileStore(path, eval, repr)), key, func)
-    
 def cached_call(map_store, key, func, *args, **kw):
     k = key(*args, **kw)
-    if not map_store.has_key(k):
+    if map_store.get(k) == None:
         map_store[k] = func(*args, **kw)
     return map_store[k]
 
-def make_cached_func(store, key, func):
-    return lambda *args, **kw: cached_call(store, key, func, *args, **kw)
+class CachedFunc:
+    def __init__(self, func, store=None, key=None):
+        if store == None: store = MapWrapper(FileStore('/tmp/' + func.__name__, eval, repr))
+        if key == None: key = lambda *args, **kw: args, kw
+        self.func, self.store, self.key = func, store, key
 
+    def __call__(self, *args, **kw):
+        return cached_call(self.store, self.key, self.func, *args, **kw)
+
+    def invalid(self, *args, **kw):
+        self.store[self.key(*args, **kw)] = None
+        
 class JournaledStore:
     def __init__(self, path):
         self.path = path
@@ -44,6 +51,9 @@ class JournaledStore:
     def check(self):
         return self.read_meta() == 'complete'
     
+    def invalid(self):
+        self.write_meta('invalid')
+        
     def load(self):
         if not self.check(): return None
         result = self.do_load()
@@ -72,22 +82,25 @@ class MapWrapper:
     def __init__(self, store):
         self.store = store
 
-    def get(self):
+    def get_dict(self):
         return self.store.load() or {}
     
-    def set(self, d):
+    def set_dict(self, d):
         return self.store.dump(d)
     
     def has_key(self, key):
-        return self.get().has_key(key)
+        return self.get_dict().has_key(key)
+    
+    def get(self, key):
+        return self.get_dict().get(key)
     
     def __getitem__(self, key):
-        return self.get()[key]
+        return self.get(key)
 
     def __setitem__(self, key, value):
-        d = self.get()
+        d = self.get_dict()
         d[key] = value
-        return self.set(d)
+        return self.set_dict(d)
     
 class DBStore(JournaledStore):
     def __init__(self, path):
