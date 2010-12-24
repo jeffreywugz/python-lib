@@ -24,6 +24,7 @@ function basename(path) path.replace(/.*\//, '')
 function dirname(path) path.replace(/\/[^\/]*$/, '')
 
 //global environment
+function getUrl() window.location.pathname
 function getQueryArgs(){ return parseQueryString(location.search.substring(1));}
 function parseQueryString(query){ return dict(p.match(/([^=]+)=(.*)/).slice(1) for each(p in query.split('&')) if(p));}
 function encodeQueryString(args){ return [k + "=" + encodeURIComponent(args[k].toString()) for(k in args)].join('&');}
@@ -112,7 +113,7 @@ function _pyRpc(url, func, args, kw){
 }
 
 function PyRpc(url){
-    this.url = url || 'psh.cgi';
+    this.url = url || '/psh';
 }
 
 PyRpc.prototype.__noSuchMethod__ = function(name, args){

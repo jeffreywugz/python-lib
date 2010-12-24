@@ -49,6 +49,7 @@ class DF(object):
         try:
             return self.call(**kw)
         except exceptions.Exception,e:
+            print e
             return None
         
     def __lshift__(self, f):

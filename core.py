@@ -6,7 +6,6 @@ import re
 import subprocess
 import time
 import string
-from mako.template import Template
 from itertools import groupby
 
 class GErr(Exception):
@@ -73,13 +72,6 @@ class Env(dict):
     def __getattr__(self, name):
         return self.get(name)
 
-class TemplateSet:
-    def __init__(self, base_dir):
-        self.base_dir = base_dir
-        
-    def render(self, file, **kw):
-        return Template(filename=os.path.join(self.base_dir, file)).render(**kw)
-        
 class BlockStream:
     tab_stop = '    '
     Debug, Info, Warning, Error = 1, 0, -1, -2
@@ -171,6 +163,10 @@ def safe_popen(cmd):
     except GErr as e:
         return "Error:\n" + str(e)
         
+def read(path):
+    with open(path, 'r') as f:
+        return f.read()
+    
 def safe_read(path):
     try:
         with open(path, 'r') as f:
@@ -217,5 +213,3 @@ class Log:
         lines = self.file.readlines()
         values = [safe_eval(line) for line in lines]
         return [_f for _f in values if _f]
-    
-core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))

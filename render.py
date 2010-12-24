@@ -1,4 +1,33 @@
 from common import *
+from mako.template import Template
+
+def xsub(pat, sep=' ', **env):
+    pat = re.sub('\$(\w+)', '${\\1}', pat)
+    segments = re.split('(?s)(\${.+?})', pat)
+    def evil(seg):
+        if not re.match('\$', seg): return seg
+        exp = re.sub('(?s)^\${(.+?)}', '\\1', seg)
+        result = eval(exp, globals(), env)
+        if type(result) != list and type(result) != tuple:
+            result = [result]
+        return sep.join([str(item) for item in result])
+    return ''.join([evil(seg) for seg in segments])
+
+class TemplateSet:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        
+    def render(self, file, **kw):
+        return Template(filename=os.path.join(self.base_dir, file)).render(**kw)
+        
+core_templates = TemplateSet(os.path.join(my_lib_dir, 'res'))
+
+def render_list_as_html2(ds, *cols):
+    tpl = """<div><table border="1" width="100%">
+  <tr style="background: black; color: white; font-weight: bold;">${['<td>%s</td>'%col for col in cols]}</tr>
+  ${['<tr>%s</tr>'% ' '.join(['<td><pre>%s</pre></td>'% item.get(col, None) for col in cols]) for item in data]}
+  </table></div>"""
+    return xsub(tpl, data=ds, cols=cols)
 
 def render_list_as_html(ds, *cols):
     return core_templates.render('list.html', data=ds, cols=cols)
