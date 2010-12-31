@@ -150,9 +150,7 @@ def shell(cmd):
 
 def popen(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-    err = p.stderr.read()
-    out = p.stdout.read()
+    out, err = p.communicate() 
     if p.returncode != 0 or err:
         raise GErr('%s\n%s'%(err, out), cmd)
     return out
