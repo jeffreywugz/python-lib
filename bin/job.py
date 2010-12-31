@@ -77,6 +77,15 @@ def msub(template, env={}, **kw):
         cur = sub(cur, new_env)
     return cur
 
+def safe_read(path):
+    try:
+        f = open(path, 'r')
+        ret = f.read()
+        f.close()
+        return ret
+    except exceptions.IOError,e:
+        return ''
+    
 def load_kv_config(f, tag="_config"):
     def safe_read(path):
         try:

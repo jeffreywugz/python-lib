@@ -178,14 +178,13 @@ def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
     
-def sub_shell(tpl, cmd, str):
+def tpl_shell(tpl, cmd, str):
     cmd = tpl_sub(tpl, cmd, str)
     print(cmd)
     shell(cmd)
     
-def sh_sub(str):
-    exprs = re.findall(str, '`([^`])`')
-    return reduce(lambda str, expr: str.replace('`%s`'%expr, os.popen(expr)), exprs, str)
+def shesc(input):
+    return re.sub('`([^`]+)`', lambda m: safe_popen(m.group(1)), input)
 
 def load_kv_config(f, tag="_config"):
     content = safe_read(f)

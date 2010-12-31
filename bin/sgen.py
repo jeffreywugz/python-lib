@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 """
 sgen which means `stream generator', can be used to filter text stream
@@ -8,7 +8,6 @@ Usage: sgen.py foo.txt ...
 import sys
 import os, os.path
 import exceptions
-from common import *
 import traceback
 import string, re
 
@@ -19,6 +18,13 @@ class SGenException(exceptions.Exception):
 
     def __str__(self):
         return "%s\n%s"%(self.msg, self.obj)
+
+def safe_read(path):
+    try:
+        with open(path, 'r') as f:
+            return f.read()
+    except IOError:
+        return ''
 
 def update_file(name, content):
     def need_update(name, content):
@@ -68,7 +74,7 @@ def sed(content, env={}, **kw):
         code = parse_seg(seg)
         if code == None: return seg
         try:
-            exec(code, env)
+            exec code in env
         except exceptions.Exception as e:
             raise SGenException('Code Exec exception', e) 
         generated = env.get('self', '')

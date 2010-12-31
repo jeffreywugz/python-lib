@@ -44,7 +44,7 @@ def render_list_as_txt(ds, *cols):
         if x.startswith('Error:'): return 'Error'
         else: return x
     def list2str(items):
-        return ',\t'.join([toStr(x).strip() for x in items])
+        return '\t'.join([toStr(x).strip() for x in items])
     return '\n'.join([list2str(items) for items in data])
 
 def render_table(cell_maker, rows, cols):

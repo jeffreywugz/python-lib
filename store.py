@@ -21,9 +21,13 @@ def cached_call(map_store, key, func, *args, **kw):
         map_store[k] = func(*args, **kw)
     return map_store[k]
 
+class PlainSerializer:
+    def __init__(self):
+        self.loads, self.dumps = eval, repr
+        
 class CachedFunc:
     def __init__(self, func, store=None, key=None):
-        if store == None: store = MapWrapper(FileStore('/tmp/' + func.__name__, eval, repr))
+        if store == None: store = MapWrapper(FileStore('/tmp/' + func.__name__, PlainSerializer()))
         if key == None: key = lambda *args, **kw: args, kw
         self.func, self.store, self.key = func, store, key
 
@@ -66,17 +70,17 @@ class JournaledStore:
         self.write_meta('complete')
 
 class FileStore(JournaledStore):
-    def __init__(self, path, loads, dumps):
-        self.path, self.loads, self.dumps = path, loads, dumps
+    def __init__(self, path, serializer):
+        self.path, self.serializer = path, serializer
         JournaledStore.__init__(self, path)
 
     def do_load(self):
         with open(self.path) as f:
-            return self.loads(f.read())
+            return self.serializer.loads(f.read())
 
     def do_dump(self, value):
         with open(self.path, 'w') as f:
-            return f.write(self.dumps(value))
+            return f.write(self.serializer.dumps(value))
 
 class MapWrapper:
     def __init__(self, store):

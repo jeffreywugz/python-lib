@@ -74,6 +74,9 @@ def dict_merge(*dicts):
 def dict_match(d, **pat):
     return set(pat.items()) <= set(d.items())
 
+def dict_rematch(d, **pat):
+    return all([re.match(v, d.get(k, '')) for(k,v) in pat.items()])
+    
 def dict_slice(d, *keys):
     return [d.get(x) for x in keys]
 
@@ -104,4 +107,3 @@ def dc_mul(*args):
 def dc_map(func, *args):
     list = dc_mul(*args)
     return [func(*x) for x in list]
-

@@ -21,6 +21,9 @@ def get_default_tasks():
 def echo(*args, **kw_args):
     print 'args=%s, kw_args=%s'%(args, kw_args)
 
+def head(obj, n=100):
+    return repr(obj)[:100]
+
 def eval_expr(expr):
     result = eval(expr)
     print result
