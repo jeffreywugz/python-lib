@@ -58,9 +58,9 @@ def print_table(table):
     for i in table:
         print('\t'.join([str(j) for j in i]))
         
-def safe_eval(expr, env={}, default=None):
+def safe_eval(expr, globals={}, locals={}, default=None):
     try:
-        return eval(expr, env)
+        return eval(expr, globals, locals)
     except Exception as e:
         return default
     
@@ -93,56 +93,6 @@ class BlockStream:
     def __lshift__(self, content):
         self.out(content)
         
-class Templet:
-    """Example: $abc ${abc} ${' '.join(range(3))}"""
-    def __init__(self, str):
-        self.str = str
-
-    def sub(self, env={}, **kw):
-        preprocessed = re.sub('\$(\w+)', '${\\1}', self.str) # Normalize: 'abc $foo def' => 'abc ${foo} def'
-        segments = re.split('(?s)(\${.+?})', preprocessed) # Split into Chunks: 'abc ${foo} def' => ['abc', '${foo}', 'def']
-        env.update(**kw)
-        def safe_eval(exp, env):
-            try:
-                return eval(exp, globals(), env)
-            except Exception as e:
-                return e
-        def evil(seg):
-            if not re.match('\$', seg): # This is for Normal Chunks.
-                return seg
-            exp = re.sub('(?s)^\${(.+?)}', '\\1', seg)
-            result = safe_eval(exp, env)
-            return str(result)
-        return ''.join([evil(seg) for seg in segments])
-    
-def sub(template, env={}, **vars):
-    return string.Template(template).safe_substitute(env, **vars)
-
-def msub(template, env={}, **kw):
-    old = ""
-    cur = template
-    new_env = copy.copy(env)
-    new_env.update(kw)
-    while cur != old:
-        old = cur
-        cur = sub(cur, new_env)
-    return cur
-
-def str2dict(template, str):
-    def normalize(str):
-        return re.sub('\$(\w+)', r'${\1:\w+}', str)
-    def tore(str):
-        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
-    rexp = '^%s$' % (tore(normalize(template)))
-    match = re.match(rexp, str)
-    if not match: return {}
-    else: return dict(match.groupdict(), __self__=str)
-
-def tpl_sub(tpl, target, str):
-    env = str2dict(tpl, str)
-    env.update(_=str)
-    return sub(target, env)
-
 def shell(cmd):
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
@@ -176,14 +126,6 @@ def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
     
-def tpl_shell(tpl, cmd, str):
-    cmd = tpl_sub(tpl, cmd, str)
-    print(cmd)
-    shell(cmd)
-    
-def shesc(input):
-    return re.sub('`([^`]+)`', lambda m: safe_popen(m.group(1)), input)
-
 def load_kv_config(f, tag="_config"):
     content = safe_read(f)
     match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)

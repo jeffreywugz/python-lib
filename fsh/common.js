@@ -137,7 +137,7 @@ function safeCall(func, arg) {
     return [result, exception]
 }
 
-function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 5
+function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 10
 function preHtml(s) isHtml(s)? s: '<pre>' + s + '</pre>'
 function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [preHtml(str(ret)), exceptionFormat(err)]
 function dumpCall(func, arg, _ret, _err){ var [ret, err] = safeCall(func, arg);  return dump2html(ret, err, _ret, _err);}
