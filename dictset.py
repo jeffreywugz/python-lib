@@ -41,12 +41,14 @@ def ds_merge(ds, ds2, *keys):
 def ds_group(ds, *keys):
     return itertools.groupby(sorted(ds, key=lambda d: dict_slice(d, *keys)), lambda d: dict_slice(d, *keys))
 
-def ds_collapse(ds, keys, target):
+def ds2dict(ds, keys, target):
     return dict([(':'.join(k), target(*v)) for k,v in ds_group(ds, *keys)])
 
-def _ds_zip(ds, keys, target):
-    return [dict_merge(dict_make(keys, k), target(v)) for k,v in ds_group(ds, *keys)]
+def ds_zip(ds, keys, attrs_generator=const({})):
+    return [dict_merge(dict_make(keys, k), attrs_generator(*v)) for k,v in ds_group(ds, *keys)]
 
-def ds_zip(ds, zip_keys, expanded_keys, target):
-    return _ds_zip(ds, zip_keys, lambda part_ds: ds_collapse(part_ds, expanded_keys, target))
+def ds2table(ds, cols, headers, cell_generator, row_attrs=const({})):
+    origin = ds_zip(ds, cols, lambda *part_ds: ds2dict(part_ds, headers, cell_generator))
+    row_extra = ds_zip(ds, cols, row_attrs)
+    return ds_merge(origin, row_extra, *cols)
 

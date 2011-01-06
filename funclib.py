@@ -6,7 +6,33 @@ import itertools
 import pprint
 from core import *
 
+class CheckException(Exception):
+    def __init__(self, msg, obj=None):
+        Exception(self)
+        self.obj, self.msg = obj, msg
+
+    def __str__(self):
+        return "CheckTypeOnObj: %s\n%s"%(self.msg, self.obj)
+
+    def __repr__(self):
+        return 'CheckException(%s, %s)'%(repr(self.msg), repr(self.obj))
+
 ######################################## Func ########################################
+def ck(predict, obj, msg):
+    if not predict:
+        raise CheckException(obj, msg)
+
+def ckt(obj, _type):
+    def is_seq(obj): type(obj) in [list, tuple]
+    def is_map(obj): type(obj) in [dict]
+    def is_str(obj): type(obj) in [str]
+    def is_int(obj): type(obj) in [int]
+    def is_func(obj): callable(obj)
+    if type(_type) != str: raise CheckException(_type, "cktype(): argument `type' is not str")
+    checker =locals().get('is_%s'%_type)
+    if not checker: raise CheckException(_type, "cktype(): argument `type' is not defined")
+    ck(checker(obj), obj, 'Require Type: %s'%_type)
+
 def counter(d, x):
     if not d.has_key(x): d[x] = 0
     d[x] += 1
@@ -14,6 +40,12 @@ def counter(d, x):
     
 def identity(x):
     return x
+
+def const(v):
+    return lambda *args, **kw: v
+
+def first(i, *seq):
+    return i
 
 def _compose(func1, func2):
     def composition(*args, **kwargs):
