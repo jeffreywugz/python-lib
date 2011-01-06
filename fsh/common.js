@@ -7,6 +7,7 @@ function range(start, stop, step){
     if(step == undefined)step = 1;
     for(var i = start; i < stop; i += step)yield i;
 }
+Number.prototype.__iterator__ = function() { for ( let i = 0; i < this; i++ )yield i;};
 function repeat(n, x){ for (var i=0; i<n; i++)yield x; }
 function repeat2arr(n, x) genArr(repeat(n, x))
 function arrScale(arr,n) Array.concat.apply([], repeat2arr(n, arr))
@@ -184,7 +185,8 @@ function fish(interp, panel, filter, id) {
     sh = lish(interp, $s(panel, 'lish'));
     bindHotKey($s(panel, 'status'), 'button0', function(e) toggleVisible($s(panel, 'input')));
     bindHotKey($s(panel, 'input'), 'ctrl-wheel', function(e){ e.target.rows += 4*e.detail; e.preventDefault();});
-    return _fish(function(line, content, caret) sched.execute(mkTasks(filter(line, content, caret), sh)), $s(panel, 'input'));
+    function doTask(line, content, caret) sched.execute(mkTasks(filter(line, content, caret), sh));
+    return _fish(doTask, $s(panel, 'input'));
 }
 
 // use seq.map to makesure seq is an array instead of a string.

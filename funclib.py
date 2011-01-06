@@ -7,6 +7,11 @@ import pprint
 from core import *
 
 ######################################## Func ########################################
+def counter(d, x):
+    if not d.has_key(x): d[x] = 0
+    d[x] += 1
+    return d[x]
+    
 def identity(x):
     return x
 
@@ -49,7 +54,11 @@ def step_in(i, steps):
     tail = [x for x in steps if x > i]
     if not tail: return None
     return tail[0]
-    
+
+def uniq(seq):
+    d = {}
+    return filter(lambda x: counter(d, x) == 1, seq)
+           
 # def list_sum(lists):
 #     result = []
 #     for list in lists:
@@ -76,13 +85,16 @@ def dict_merge(*dicts):
     return reduce(lambda a,b: a.update(b) or a, dicts, {})
 
 def dict_match(d, **pat):
-    return set(pat.items()) <= set(d.items())
+    return all([d.get(k) == v for k,v in pat.items()])
 
 def dict_rematch(d, **pat):
     return all([re.match(v, d.get(k, '')) for(k,v) in pat.items()])
     
 def dict_slice(d, *keys):
     return [d.get(x) for x in keys]
+
+def dict_slice2(d, *keys):
+    return dict([(x, d.get(x)) for x in keys])
 
 def dict_map(func, d):
     return dict([(k, func(v)) for (k,v) in list(d.items())])
@@ -93,15 +105,15 @@ def dict_trans(d, **kw):
         else: return d
     return dict_map(lambda v: call_or_not(v, d), kw)
     
-def _dict_updated(d, extra={}, **kw):
+def dict_updated(d, extra={}, **kw):
     new_dict = copy.copy(d)
     new_dict.update(extra, **kw)
     return new_dict
 
-def dict_updated(d, extra={}, **kw):
-    new_dict = dict_trans(d, **_dict_updated(extra, kw))
-    new_dict = _dict_updated(d, new_dict)
-    return _dict_updated(new_dict, new_dict.get('_inline_') or {})
+def dict_updated_ex(d, extra={}, **kw):
+    new_dict = dict_trans(d, **dict_updated(extra, kw))
+    new_dict = dict_updated(d, new_dict)
+    return dict_updated(new_dict, new_dict.get('_inline_') or {})
 
 def dc_mul(*args):
     def _dcmul(a,b):
@@ -120,7 +132,7 @@ def sub2(_str, env=globals(), **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()}"""
     def pipe_eval(ps, env):
         return reduce(lambda x,y: y(x), [safe_eval(p, env) for p in ps.split('|>')])
-    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', lambda m: str(pipe_eval(m.group(2) or m.group(3), _dict_updated(env, kw))), _str)
+    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', lambda m: str(pipe_eval(m.group(2) or m.group(3), dict_updated(env, kw))), _str)
     
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)

@@ -17,6 +17,9 @@ def ds_mget(ds, *keys):
 def ds_filter(ds, **kw):
     return [d for d in ds if dict_match(d, **kw)]
 
+def ds_filter1(ds, **kw):
+    return (ds_filter(ds, **kw) or [{}])[0]
+
 def ds_refilter(ds, **kw):
     return [d for d in ds if dict_rematch(d, **kw)]
 
@@ -28,6 +31,12 @@ def ds_filter_by_key(ds, key, *values):
     
 def ds_updated(ds, **kw):
     return [dict_updated(d, kw) for d in ds]
+
+def ds_updated_ex(ds, **kw):
+    return [dict_updated_ex(d, kw) for d in ds]
+
+def ds_merge(ds, ds2, *keys):
+    return [dict_updated(d, ds_filter1(ds2, **dict_slice2(d, *keys))) for d in ds]
 
 def ds_group(ds, *keys):
     return itertools.groupby(sorted(ds, key=lambda d: dict_slice(d, *keys)), lambda d: dict_slice(d, *keys))

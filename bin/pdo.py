@@ -2,14 +2,15 @@
 
 """
 pdo which means `pattern do', can be use to do some operation based on a seqence of strings
-Usage: pdo '$base.png' echo '$base.jpg' : *.png
+Usages:
+pdo '$base.png' echo '$s $base.jpg' : *.png
+pdo '.png->.svg' echo '$s $t' : *.png
 """
 import sys
-import os, os.path
 import exceptions
-from common import *
 import traceback
 import string, re
+import subprocess
 
 class PdoException(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -22,6 +23,12 @@ class PdoException(exceptions.Exception):
     def __repr__(self):
         return 'PdoException(%s, %s)'%(repr(self.msg), repr(self.obj))
     
+def sub(template, env={}, **vars):
+    return string.Template(template).safe_substitute(env, **vars)
+
+def shell(cmd):
+    return subprocess.call(cmd, shell=True)
+
 def parse(args):
     def get_colon_index(args):
         for i,v in enumerate(args):
@@ -30,23 +37,35 @@ def parse(args):
     def split_by_colon(args):
         i = get_colon_index(args)
         return args[:i], args[i+1:]
+    def normalize(str):
+        return re.sub('\$(\w+)', r'${\1:\w+}', str)
+    def src2re(str):
+        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
+    def repl2re(str):
+        return re.sub(r'\$(\w+)', r'\\g<\1>', str)
     head, items = split_by_colon(args)
     if not head: raise PdoException('Missing pattern before ":"', head)
     pat, cmd = head[0], head[1:]
-    return pat, cmd, items
+    pat = pat.split('->')
+    if len(pat) > 2: raise PdoException("`->' appeared more than once")
+    if len(pat) < 2: pat.append('')
+    [src, target] = pat
+    return [src2re(normalize(src)), repl2re(target)], ' '.join(cmd), items
 
-def pdo_run(args):
-    pat, cmd, items = parse(args)
-    cmd =  ' '.join(cmd)
-    for i in items:
-        env = str2dict(pat, i)
-        if not env: continue
-        _cmd = sub(cmd, env)
-        shell(_cmd)
+def tpl_sub((src, target), tpl, str):
+    env = re.search(src, str)
+    if not env: return None
+    env = env.groupdict()
+    if target: target = re.sub(src, target, str)
+    env.update(s=str, t=target)
+    return sub(tpl, env)
         
+def pdo_cmds((src, target), tpl, items):
+    return filter(None, [tpl_sub([src, target], tpl, i) for i in items])
+
 def main(args):
     try:
-        pdo_run(args)
+        for cmd in pdo_cmds(*parse(args)): shell(cmd)
     except PdoException as e:
         print(e)
         print(globals()['__doc__'])

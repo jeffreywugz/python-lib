@@ -49,7 +49,8 @@ class DF(object):
         try:
             return self.call(**kw)
         except exceptions.Exception,e:
-            print e
+            sys.stderr.write('Exception: df(**%s) => %s\n' %(kw, e))
+            sys.stderr.write( traceback.format_exc())
             return None
         
     def __lshift__(self, f):
