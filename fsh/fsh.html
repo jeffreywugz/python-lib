@@ -1,45 +1,37 @@
 <html>
   <head>
-    <title>${path}</title>
+    <title>Fish</title>
     <link rel="stylesheet" type="text/css" href="fsh.css"/>
-    <script type="application/javascript;version=1.8" src="common.js"></script>
+    <script type="application/javascript;version=1.8" src="core.js"></script>
+    <script type="application/javascript;version=1.8" src="fsh.js"></script>
     <script type="application/javascript;version=1.8">
-        var path = getUrl().replace(new RegExp('/fsh/[^/]*$'), '') || '/tmp/scratch';
-        document.title = 'fsh: ' + path;
-        var rpc = new ComPyRpc();
-        var globalJsTag = '#js:', localJsTag = '#ljs:', jsvTag = /\$jsv(?:{(.+)})?/;
-        var handler = function(cmd) rpc.popen(cmd, dirname(path));
-        var _jsv_ = "";
-        var jobSeqFilter = function(cmd){
-            var m = cmd.match(jsvTag);
-            if(!m)return [cmd];
-            var seq = [parseInt(i)*1000 || i for each(i in (m[1] || _jsv_ || '').split(','))];
-            return cmd.seqSub(jsvTag, seq);
-        }
-        var trivialFilter = function(line, content) [line];
-        var _filter_ = jobSeqFilter;
+    var jsTag = '#js:';
+    var jobSeqFilter = function(cmd){
+        var m = cmd.match(jsvTag);
+        if(!m)return [cmd];
+        var seq = [parseInt(i)*1000 || i for each(i in (m[1] || _jsv_ || '').split(','))];
+        return cmd.seqSub(jsvTag, seq);
+    }
+    var trivialFilter = function(line, content) [line];
 
-        function safe_set(path, content){
-            try{
-                rpc.set(path, content);
-            }catch(e){
-                alert('failed set content for: ' + path);
-            }
+    var content = ''
+    function safe_set(_content){
+        try{
+            if(content != _content){content=_content; set(content);}
+        }catch(e){
+            alert('failed set content!');
         }
+    }
         
-        function filter(line, content, caret) {
-            setTimeout(function() safe_set(path, content), 0);
-            _filter_ = jobSeqFilter;
-            eval(filterLines(content.substring(0, caret), globalJsTag).join(';'));
-            eval(filterLine(line, localJsTag));
-            if(typeof _filter_ != 'function')_filter_ = jobSeqFilter;
-            return _filter_(line, content) || [];
-        }
+    function filter(line, content, caret){
+        safe_set(content);
+        return trivialFilter(line, content) || [];
+    }
         
-        function initApp() {
-            var fsh = fish(handler, $('fish'), filter, path);
-            fsh('', rpc.get(path));
-        }
+    function initApp(){
+        var fsh = fish(popen, $('fish'), filter, 'fish');
+        fsh('', get());
+    }
     </script>
   </head>
   <body onload="initApp()">
