@@ -1,18 +1,31 @@
 // algorithmic
+function irange(n){ for(let i = 0; i < n; i++ )yield i;}
+function listk(iter) [i for(i in iter)]
+function listv(iter) [i for each(i in iter)]
+function range(n) listk(irange(n))
+function zip(A, B) [[A[i], B[i]] for(i in A)]
 function dict(pairs){ var result = {}; for each([k,v] in pairs) result[k] = v;  return result;}
 function dictMap(f, d){ return dict([k, f(v)] for each([k,v] in Iterator(d))); }
 Number.prototype.__iterator__ = function() { for ( let i = 0; i < this; i++ )yield i;};
 function repeat(n, x){ for (var i=0; i<n; i++)yield x; }
+function bind(obj, attrs) {for ([k,v] in Iterator(attrs))obj[k]=v; return obj;}
 
 // string related
 function repr(obj) {return JSON.stringify(obj);}
 function str(obj){ return typeof obj == 'string'? obj: repr(obj);}
-String.prototype.format = function()let(dict=arguments[0]) this.replace(/{(\w+)}/g, function(m,k) dict[k])
+function sub(str, dict) str.replace(/{(\w+)}/g, function(m,k) dict[k])
+String.prototype.format = function(dict) sub(this, dict);
 String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(pat, i): i for each(i in seq)];
 function basename(path) path.replace(/.*\//, '')
 function dirname(path) path.replace(/\/[^\/]*$/, '')
+function str2dict(pat, str){
+    var [rexp, keys] = [pat.replace(/\(\w+=(.*?)\)/g, '($1)'), pat.match(/\((\w+)=.*?\)/g) || []]
+    keys = keys.map(function(i) i.replace(/\((\w+)=.*?\)/, '$1'));
+    return let(m=str.match(rexp)) m? dict(zip(['__self__'].concat(keys), m)): null;
+}
 
 //global environment
+function log() window.console &&  console.log.apply(null, arguments)
 function getUrl() window.location.pathname
 function getQueryArgs(){ return parseQueryString(location.search.substring(1));}
 function parseQueryString(query){ return dict(p.match(/([^=]+)=(.*)/).slice(1) for each(p in query.split('&')) if(p));}
@@ -71,3 +84,19 @@ function http(url, content){
     req.send(content);
     return req.responseText;
 }
+
+// use seq.map to makesure seq is an array instead of a string.
+function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null, i]: [func, i, 0])
+function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
+function Scheduler(){}
+Scheduler.prototype.cancel = function() clearTimeout(this.timer);
+Scheduler.prototype.execute = function(tasks){
+    this.onExecute && this.onExecute(tasks);
+    this.cancel();
+    if(!tasks || !tasks.length)return;
+    var [func, arg, delay] = tasks[0];
+    if(func && !func(arg))return;
+    self = this;
+    this.timer = setTimeout(function() self.execute(tasks.slice(1)), delay);
+}
+

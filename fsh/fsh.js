@@ -1,3 +1,21 @@
+function getBlock(str, caret, sTag, eTag){
+    let [s, e] = [str.lastIndexOf(sTag, caret-1), str.indexOf(eTag, caret)];
+    return str.substring(s==-1? 0: s+sTag.length, e==-1? str.length: e);
+}
+function filterLines(content, tag) [i.substring(tag.length) for each(i in content.match(RegExp(tag+'.*$', 'gm')))]
+function getCurLine(content, caret) getBlock(content, caret, '\n', '\n')
+
+function splitByFirstLine(str) let(i = str.indexOf('\n')+1) [str.substring(0, i), str.substr(i)]
+function rpcDecode(str){
+    let [head, content] = splitByFirstLine(str);
+    if(head == 'Exception:\n') throw content;
+    else return content;
+}
+
+function get() rpcDecode(http('get'))
+function set(content) rpcDecode(http('set', content))
+function popen(cmd) rpcDecode(http('popen', cmd))
+
 function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 10
 function preHtml(s) isHtml(s)? s: '<pre>' + s + '</pre>'
 function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [preHtml(str(ret)), exceptionFormat(err)]
@@ -28,19 +46,11 @@ function lish(interp, panel) {
 }
 
 // fish means `file shell'
-function getCurLine(content, caret){
-    [s, e] = [content.lastIndexOf("\n", caret-1), content.indexOf("\n", caret)];
-    return content.substring(s+1, e!=-1? e: content.length);
-}
-function filterLines(content, tag) [i.substring(tag.length) for each(i in content.match(RegExp(tag+'.*$', 'gm')))]
-function filterLine(content, tag) filterLines(content, tag)[0]
-
-function fishHandle(interp, input){
-    line = getCurLine(input.value, textAreaGetCaret(input));
-    return interp(line, input.value, textAreaGetCaret(input));
-}
-
 function _fish(interp, input) {
+    function fishHandle(interp, input){
+        let [content, caret] = [input.value, textAreaGetCaret(input)];
+        return interp(getCurLine(content, caret), content, caret);
+    }
     bindHotKey(top, 'ctrl-alt-h', function(e) toggleVisible(input));
     bindHotKey(input, 'ctrl-alt-e', function(e) fishHandle(interp, e.target));
     bindHotKey(input, 'ctrl-button0', function(e) fishHandle(interp, e.target));
@@ -48,38 +58,37 @@ function _fish(interp, input) {
 }
 
 function fish(interp, panel, filter, id) {
-    panel.innerHTML = '<textarea name="content" class="input" rows="12">${content}</textarea><pre class="status"></pre><div class="lish"></div>';
+    panel.innerHTML = '<textarea name="content" class="input" rows="12">${content}</textarea><pre class="error"></pre><pre class="status"></pre><div class="lish"></div>';
     var sched = new Scheduler();
     sched.onExecute = function(tasks) $s(panel, 'status').innerHTML = id + ': ' + repr(tasks.map(taskFormat));
     filter = filter || function(line, content) [line];
     sh = lish(interp, $s(panel, 'lish'));
     bindHotKey($s(panel, 'status'), 'button0', function(e) toggleVisible($s(panel, 'input')));
     bindHotKey($s(panel, 'input'), 'ctrl-wheel', function(e){ e.target.rows += 4*e.detail; e.preventDefault();});
-    function doTask(line, content, caret) sched.execute(mkTasks(filter(line, content, caret), sh));
+    function doTask(expr, content, caret){
+        function error(msg) $s(panel, 'error').innerHTML = msg;
+        var tasks = [];
+        try{
+            tasks =mkTasks(filter(expr, content, caret), sh);
+        } catch(e) {
+            error(exceptionFormat(e));
+            return;
+        }
+        error('');
+        sched.execute(tasks);
+    }
     return _fish(doTask, $s(panel, 'input'));
 }
 
-// use seq.map to makesure seq is an array instead of a string.
-function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null, i]: [func, i, 0])
-function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
-function Scheduler(){}
-Scheduler.prototype.cancel = function() clearTimeout(this.timer);
-Scheduler.prototype.execute = function(tasks){
-    this.onExecute && this.onExecute(tasks);
-    this.cancel();
-    if(!tasks || !tasks.length)return;
-    var [func, arg, delay] = tasks[0];
-    if(func && !func(arg))return;
-    self = this;
-    this.timer = setTimeout(function() self.execute(tasks.slice(1)), delay);
+function generateTasks(_args, cmd, seq, _env){
+    let args = str2dict(_args, cmd);
+    if(!args)return [];
+    let env = bind(dict(Iterator(_env)), args);
+    log('gen: ', _args, cmd, seq, env);
+    return [typeof(t) == 'number'? t: sub(t, env) for each(t in seq)];
 }
 
-function splitByFirstLine(str) let(i = str.indexOf('\n')+1) [str.substring(0, i), str.substr(i)]
-function rpcDecode(str){
-    let [head, content] = splitByFirstLine(str);
-    if(head == 'Exception:\n') throw content;
-    else return content;
+function FshTasksGenerator(seq, args){
+    bind(this, {seq:seq, args:'.*'});
 }
-function get() rpcDecode(http('get'))
-function set(content) rpcDecode(http('set', content))
-function popen(cmd) rpcDecode(http('popen', cmd))
+FshTasksGenerator.prototype.gen = function(cmd) generateTasks(this.args, cmd, this.seq, this);

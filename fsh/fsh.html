@@ -5,15 +5,8 @@
     <script type="application/javascript;version=1.8" src="core.js"></script>
     <script type="application/javascript;version=1.8" src="fsh.js"></script>
     <script type="application/javascript;version=1.8">
-    var jsTag = '#js:';
-    var jobSeqFilter = function(cmd){
-        var m = cmd.match(jsvTag);
-        if(!m)return [cmd];
-        var seq = [parseInt(i)*1000 || i for each(i in (m[1] || _jsv_ || '').split(','))];
-        return cmd.seqSub(jsvTag, seq);
-    }
     var trivialFilter = function(line, content) [line];
-
+    
     var content = ''
     function safe_set(_content){
         try{
@@ -23,9 +16,15 @@
         }
     }
         
+    var tasks = new FshTasksGenerator(['{__self__}'], '.*');
     function filter(line, content, caret){
         safe_set(content);
-        return trivialFilter(line, content) || [];
+        let global = getBlock(content, 0, '####', '####');
+        let local = getBlock(content, caret, '####', '####');
+        eval(filterLines(global, '#js:').join(';'));
+        eval(filterLines(local, '#js:').join(';'));
+        return tasks.gen(line);
+        //return trivialFilter(line, content) || [];
     }
         
     function initApp(){

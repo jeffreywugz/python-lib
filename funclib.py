@@ -189,6 +189,14 @@ def str2dict(template, str):
     if not match: return {}
     else: return dict(match.groupdict(), __self__=str)
 
+def str2dict2(tpl, str):
+    rexp = re.sub('\(\w+=(.*?)\)', r'(\1)', tpl)
+    keys = re.findall('\((\w+)=.*?\)', tpl)
+    print rexp, keys
+    match = re.match(rexp, str)
+    if not match: return {}
+    else: return dict(zip(keys, match.groups()), __self__=str)
+    
 def tpl_sub(tpl, target, str):
     env = str2dict(tpl, str)
     env.update(_=str)
