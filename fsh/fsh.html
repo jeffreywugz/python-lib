@@ -5,8 +5,6 @@
     <script type="application/javascript;version=1.8" src="core.js"></script>
     <script type="application/javascript;version=1.8" src="fsh.js"></script>
     <script type="application/javascript;version=1.8">
-    var trivialFilter = function(line, content) [line];
-    
     var content = ''
     function safe_set(_content){
         try{
@@ -23,8 +21,7 @@
         let local = getBlock(content, caret, '####', '####');
         eval(filterLines(global, '#js:').join(';'));
         eval(filterLines(local, '#js:').join(';'));
-        return tasks.gen(line);
-        //return trivialFilter(line, content) || [];
+        return line? tasks.gen(line): [];
     }
         
     function initApp(){

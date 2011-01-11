@@ -1,8 +1,13 @@
-from common import *
-import exceptions
-import collections
+#!/usr/bin/python2
+
+import sys
 import os, os.path
+self_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.extend([self_dir])
 import re
+import exceptions
+from collections import Callable
+from pprint import pformat
 from glob import glob
 
 # Shell 2 Python Interface
@@ -62,7 +67,7 @@ def cmd_pipe_eval(env, args):
     except exceptions.IndexError:
         raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
-    if not isinstance(func, collections.Callable):
+    if not isinstance(func, Callable):
         if  list_args or kw_args:
             raise GErr("not callable", func)
         else:
@@ -96,4 +101,45 @@ def rmrf(target):
 def gen_file(env, tpl, file):
     new_content = Template(filename=tpl).render(**env)
     write(file, new_content)
+    
+# interface
+def get_default_tasks():
+    top_tasks = ['top.py', '../top.py', '../../top.py'] 
+    local_tasks = ['task.py', '../task.py', '../../task.py']
+    try:
+        top_index = [os.path.exists(f) for f in top_tasks].index(True)
+    except exceptions.ValueError:
+        top_index = 0
+    tasks = local_tasks[:top_index+1] + top_tasks[:top_index+1]
+    tasks.reverse()
+    return filter(os.path.exists, tasks)
+
+def echo(*args, **kw_args):
+    print 'args=%s, kw_args=%s'%(args, kw_args)
+
+def head(obj, n=100):
+    return repr(obj)[:100]
+
+def eval_expr(expr):
+    result = eval(expr)
+    print result
+
+def lop(op, func, *arg, **kw):
+    if not len(arg) > 1: raise GErr('me_map require at least a argument as List', (arg, kw))
+    list = arg[-1]
+    arg = arg[:-1]
+    func = eval(func)
+    op = eval(op)
+    def callback(i):
+        new_arg = arg + (i,)
+        return func(*new_arg, **kw)
+    return op(callback, list)
+
+tasks = get_default_tasks()
+# print 'total tasks: %s'%tasks
+for t in tasks:
+    # print 'load %s'%t
+    globals().update(__task_file__=t)
+    execfile(t, globals())
+print run_cmd(globals(), sys.argv[1:])
     

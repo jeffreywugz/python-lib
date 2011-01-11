@@ -157,8 +157,8 @@ def dc_map(func, *args):
     return [func(*x) for x in list]
 
 ######################################## String ########################################
-def joiner(sep=' '):
-    return lambda seq: sep.join(map(str,seq))
+def li(format=' %s'):
+    return lambda seq: ''.join([format% i for i in seq])
 
 def sub2(_str, env=globals(), **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()}"""

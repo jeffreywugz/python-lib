@@ -39,7 +39,7 @@ def get(path, *args):
     
 def set(path, content):
     with open(path, 'w') as f:
-        f.write(content.encode('utf-8'))
+        f.write(content)
 
 def psh(func, path, content):
     result, tb = None, None

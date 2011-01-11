@@ -12,6 +12,8 @@
 .error {
     font-size: 100%;
     color: #FF0000;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 .output {
     overflow:visible;
