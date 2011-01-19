@@ -24,8 +24,14 @@
         return line? tasks.gen(line): [];
     }
         
+    function popen_wrapper(cmd){
+        bind($('ref'), {href:'popen?' + encodeQueryString({post:cmd}), innerHTML: 'Ref This Cmd Output'});
+        return popen(cmd);
+    }
     function initApp(){
-        var fsh = fish(popen, $('fish'), filter, 'fish');
+        var panel = $('fish');
+        var fsh = fish(popen_wrapper, panel, filter, 'Fsh');
+        panel.insertBefore(bind($n('a'), {id:'ref'}), $s(panel, 'lish'));
         fsh('', get());
     }
     </script>

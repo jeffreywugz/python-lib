@@ -56,7 +56,7 @@ def tpl_sub((src, target), tpl, str):
     env = re.search(src, str)
     if not env: return None
     env = env.groupdict()
-    if target: target = re.sub(src, target, str)
+    target = re.sub(src, target, str)
     env.update(s=str, t=target)
     return sub(tpl, env)
         

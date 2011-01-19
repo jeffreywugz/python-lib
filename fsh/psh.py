@@ -94,6 +94,7 @@ def fsh_handler(path, post, query):
     return 'text/plain', rpc_encode(*psh(method, path or '/tmp/scratch', post))
     
 def app(path, post, query):
+    post = query.get('post') or post
     handlers = [fsh_handler, index_handler, dir_handler, file_handler, err_handler]
     mime, content = try_these(handlers, path, post, query)
     return ('200 OK', [('Content-Type', mime)]), content

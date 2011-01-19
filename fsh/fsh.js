@@ -17,7 +17,7 @@ function set(content) rpcDecode(http('set', content))
 function popen(cmd) rpcDecode(http('popen', cmd))
 
 function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 10
-function preHtml(s) isHtml(s)? s: '<pre>' + s + '</pre>'
+function preHtml(s) isHtml(s)? s: '<pre onClick="selectNode(this.firstChild)">' + s + '</pre>'
 function dump2html(ret, err, _ret, _err) [_ret.innerHTML, _err.innerHTML] = [preHtml(str(ret)), exceptionFormat(err)]
 function dumpCall(func, arg, _ret, _err){ var [ret, err] = safeCall(func, arg);  return dump2html(ret, err, _ret, _err);}
 function mkDumper(func, _ret, _err) function(arg) dumpCall(func, arg, _ret, _err)
@@ -57,10 +57,11 @@ function _fish(interp, input) {
     return function(expr, full) interp(expr, full != undefined? input.value=full: input.value);
 }
 
-function fish(interp, panel, filter, id) {
-    panel.innerHTML = '<textarea name="content" class="input" rows="12">${content}</textarea><pre class="error"></pre><pre class="status"></pre><div class="lish"></div>';
+function fish(interp, panel, filter, status) {
+    panel.innerHTML = '<textarea name="content" class="input" rows="12">${content}</textarea><pre class="error"></pre><div class="status"></div><div class="lish"></div>';
     var sched = new Scheduler();
-    sched.onExecute = function(tasks) $s(panel, 'status').innerHTML = id + ': ' + repr(tasks.map(taskFormat));
+    function _status(id, tasks, i) '<pre class="status">' + id + ': ' + tasks.slice(i).map(taskFormat).join(';') + '</pre>';
+    sched.onExecute = function(tasks, i) $s(panel, 'status').innerHTML = (typeof(status) == 'function'? status(tasks,i): _status(status, tasks, i))
     filter = filter || function(line, content) [line];
     sh = lish(interp, $s(panel, 'lish'));
     bindHotKey($s(panel, 'status'), 'button0', function(e) toggleVisible($s(panel, 'input')));
@@ -75,7 +76,7 @@ function fish(interp, panel, filter, id) {
             return;
         }
         error('');
-        sched.execute(tasks);
+        sched.execute(tasks, 0);
     }
     return _fish(doTask, $s(panel, 'input'));
 }

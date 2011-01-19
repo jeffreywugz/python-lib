@@ -6,10 +6,19 @@ self_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.extend([self_dir])
 import re
 import exceptions
+from itertools import groupby
 from collections import Callable
 from pprint import pformat
 from glob import glob
 
+def list_split(l, *sep):
+    result = [[]]
+    for i in l:
+        if i in sep:
+            result.append([])
+        else:
+            result[-1].append(i)
+    return result
 # Shell 2 Python Interface
 def cmd_arg_quote(arg):
     return '"%s"'%(arg.replace('"', '\\"').replace('$', '\\$'))
@@ -85,6 +94,9 @@ def get_ext(name):
     index = name.rfind('.')
     if index == -1: return ""
     return name[index+1:].lower()
+
+def chext(path, ext):
+    return re.sub(r'(\.[^/.]*)$', ext, path)
 
 def file_extract(f, pattern):
     content = safe_read(f)

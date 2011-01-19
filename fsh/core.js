@@ -34,22 +34,30 @@ function obj2QueryString(obj){return encodeQueryString(dictMap(function(v)JSON.s
 function errorFormat(msg, url, lineno){ return repr([msg, url, lineno]);}
 function exceptionFormat(e){ return e? e.toString() + '\n' + str(e.stack): "";}
 function onerror(msg, url, lineno) { alert(errorFormat(msg, url, lineno)); return true;}
-// window.onerror = onerror;
+//window.onerror = onerror;
 
 // DOM element operation
-function $(id){ return document.getElementById(id);}
-function $F(id){ return $(id).value;}
-function $c(w, c){ return [x for each(x in w.childNodes) if(x.className == c)];}
-function $s(w, c){ return $c(w, c)[0];}
+function $(id) document.getElementById(id)
+function $n(tag) document.createElement(tag)
+function $F(id) $(id).value
+function $c(w, c) [x for each(x in w.childNodes) if(x.className == c)]
+function $s(w, c) $c(w, c)[0]
 function insertAfter(parent, node, referenceNode){ parent.insertBefore(node, referenceNode.nextSibling);}
-function hide(w){ w.style.display = 'none';}
-function show(w){ w.style.display = 'block';}
-function isVisible(w){ return w.style.display != 'none'; }
-function toggleVisible(w){ isVisible(w)?hide(w):show(w);}
-function setHeight(w){ w.style.height = w.scrollHeight + "px"; }
-function scrollTo(w, top){ w.scrollTop = top; }
-function textAreaGetCaret(textArea){ return textArea.selectionStart; }
-function textAreaSetCaret(textArea, caret){ textArea.setSelectionRange(caret, caret);}
+function hide(w) w.style.display = 'none'
+function show(w) w.style.display = 'block'
+function isVisible(w) w.style.display != 'none'
+function toggleVisible(w) isVisible(w)?hide(w):show(w)
+function setHeight(w) w.style.height = w.scrollHeight + "px"
+function scrollTo(w, top) w.scrollTop = top
+function textAreaGetCaret(textArea) textArea.selectionStart
+function textAreaSetCaret(textArea, caret) textArea.setSelectionRange(caret, caret)
+
+function selectNode(node){
+    let [select, range] = [window.getSelection(), document.createRange()];
+    range.selectNode(node);
+    select.removeAllRanges();
+    select.addRange(range);
+}
 
 // hot key/click related
 function parseHotKey(key){
@@ -90,13 +98,12 @@ function mkTasks(seq, func) seq.map(function(i) typeof(i)=='number'? [null, null
 function taskFormat(t) {var [func,arg,delay] = t; return func? arg: '#'+delay;}
 function Scheduler(){}
 Scheduler.prototype.cancel = function() clearTimeout(this.timer);
-Scheduler.prototype.execute = function(tasks){
-    this.onExecute && this.onExecute(tasks);
+Scheduler.prototype.execute = function(tasks, i){
+    this.onExecute && this.onExecute(tasks,i);
     this.cancel();
-    if(!tasks || !tasks.length)return;
-    var [func, arg, delay] = tasks[0];
+    if(!tasks || tasks.length <= i)return;
+    var [func, arg, delay] = tasks[i];
     if(func && !func(arg))return;
     self = this;
-    this.timer = setTimeout(function() self.execute(tasks.slice(1)), delay);
+    this.timer = setTimeout(function() self.execute(tasks, i+1), delay);
 }
-
