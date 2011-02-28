@@ -41,6 +41,9 @@ def set(path, content):
     with open(path, 'w') as f:
         f.write(content)
 
+def echo(path, arg):
+    return arg
+
 def psh(func, path, content):
     result, tb = None, None
     try:

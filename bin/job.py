@@ -42,20 +42,16 @@ def shell(cmd):
     sys.stdout.flush()
     if ret != 0: raise GErr('ShellError', ret)
 
-# def popen(cmd):
-#     print "popen:%s" % cmd
-#     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#     p.wait()
-#     err = p.stderr.read()
-#     out = p.stdout.read()
-#     if p.returncode != 0 or err:
-#         raise GErr('%s\n%s'%(err, out), cmd)
-#     return out
+def ashell(cmd):
+    #print "ashell:%s" % cmd
+    return subprocess.Popen(cmd, shell=True)
+
 def popen(cmd):
-    stdin, stdout_stderr = os.popen4(cmd)
-    stdin.close()
-    out = stdout_stderr.read()
-    stdout_stderr.close()
+#   print "popen:%s" % cmd
+    p = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    if p.returncode != 0 or err:
+        raise GErr('PopenError: %s\n%s'%(err, out), cmd)
     return out
     
 def list_sum(lists):
@@ -130,7 +126,7 @@ class Job:
         self.actions = {
             'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
-            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'; if [ $? == 0 ]; then echo JobSuccess: ssh-cmd; else echo JobException: ssh-cmd;fi ) >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'; if [ $? == 0 ]; then echo JobSuccess: ssh-cmd; else echo JobException: ssh-cmd;fi ) >/tmp/$last_level_dir/$host.log 2>&1",
             'cat': "echo -e '\n-----$host-----\n'; tail -n 100 /tmp/$last_level_dir/$host.log",
             'view':  "tail -n 100 /tmp/$last_level_dir/$host.log",
             }
@@ -150,7 +146,15 @@ class Job:
             except GErr as e:
                 return "JobException: popen failed" + str(e)
         return [(p['host'], safe_popen(msub(cmd,p))) for p in self.get_host_profile()]
-    
+
+    def ashell(self, cmd):
+        def safe_ashell(cmd):
+            try:
+                return ashell(cmd)
+            except GErr as e:
+                print("JobException: shell failed" + str(e))
+        return [(p['host'], safe_ashell(msub(cmd,p))) for p in self.get_host_profile()]
+
     def get_host_profile(self):
         return [dict(host=h, user=self.user, dir=self.dir,
                      passwd=self.env.get('%s-%s-passwd'%(h, self.user), ''),
@@ -164,7 +168,10 @@ class Job:
         return self.shell(self.actions['run'])
     
     def bg(self):
-        return self.shell(self.actions['bg'])
+        return self.shell(self.actions['bg'] + " &")
+        
+    def wait(self):
+        return [(h, p and p.wait()) for h,p in self.ashell(self.actions['bg'])]
     
     def cat(self):
         return self.shell(self.actions['cat'])
