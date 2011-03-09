@@ -19,7 +19,7 @@ String.prototype.seqSub = function(pat, seq) [typeof(i)=="string"? this.replace(
 function basename(path) path.replace(/.*\//, '')
 function dirname(path) path.replace(/\/[^\/]*$/, '')
 function str2dict(pat, str){
-    var [rexp, keys] = [pat.replace(/\(\w+=(.*?)\)/g, '($1)'), pat.match(/\((\w+)=.*?\)/g) || []]
+    var [rexp, keys] = [pat.replace(/\(\w+=(.*?)\)/g, '($1)'), pat.match(/\((\w+)=.*?\)/g) || []];
     keys = keys.map(function(i) i.replace(/\((\w+)=.*?\)/, '$1'));
     return let(m=str.match(rexp)) m? dict(zip(['__self__'].concat(keys), m)): null;
 }

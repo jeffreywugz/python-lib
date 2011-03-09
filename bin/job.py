@@ -54,6 +54,9 @@ def popen(cmd):
         raise GErr('PopenError: %s\n%s'%(err, out), cmd)
     return out
     
+def hostname():
+    return popen('hostname').strip()
+
 def list_sum(lists):
     result = []
     for list in lists:
@@ -122,7 +125,7 @@ def gen_list(*ranges):
     
 class Job:
     def __init__(self, user, hosts, dir, cmd, env):
-        self.user, self.hosts, self.dir, self.cmd, self.env = user, hosts, dir, cmd, env
+        self.master, self.user, self.hosts, self.dir, self.cmd, self.env = hostname(), user, hosts, os.path.realpath(dir), cmd, env
         self.actions = {
             'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
             'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
@@ -156,7 +159,7 @@ class Job:
         return [(p['host'], safe_ashell(msub(cmd,p))) for p in self.get_host_profile()]
 
     def get_host_profile(self):
-        return [dict(host=h, user=self.user, dir=self.dir,
+        return [dict(master=self.master, host=h, user=self.user, dir=self.dir,
                      passwd=self.env.get('%s-%s-passwd'%(h, self.user), ''),
                      cmd=' '.join([cmd_arg_quote(msub(i, self.env)) for i in self.cmd]),
                      last_level_dir=os.path.basename(self.dir)) for h in self.hosts]
