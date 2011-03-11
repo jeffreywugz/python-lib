@@ -84,7 +84,9 @@ function fish(interp, panel, filter, status) {
 function generateTasks(_args, cmd, seq, _env){
     let args = str2dict(_args, cmd);
     if(!args)return [];
+    log(args)
     args = dict([[k,v] for each([k,v] in Iterator(args))if(v)]);
+    log(args)
     let env = bind(dict(Iterator(_env)), args);
     log('gen: ', _args, cmd, seq, env);
     return [typeof(t) == 'number'? t: sub(t, env) for each(t in seq)];

@@ -112,7 +112,7 @@ class DBStore(JournaledStore):
 
     @staticmethod
     def get_types(table):
-        type_map = {None:'NULL', int:'INTEGER', float:'REAL', str:'TEXT', str:'TEXT'}
+        type_map = {None:'NULL', int:'INTEGER', float:'REAL', str:'TEXT'}
         seq = table[0]
         return [type_map[type(i)] for i in seq]
 
