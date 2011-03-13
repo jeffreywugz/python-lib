@@ -116,8 +116,8 @@ def gen_file(env, tpl, file):
     
 # interface
 def get_default_tasks():
-    top_tasks = ['top.py', '../top.py', '../../top.py'] 
-    local_tasks = ['task.py', '../task.py', '../../task.py']
+    top_tasks = ['Top.py', '../Top.py', '../../Top.py'] 
+    local_tasks = ['Task.py', '../Task.py', '../../Task.py']
     try:
         top_index = [os.path.exists(f) for f in top_tasks].index(True)
     except exceptions.ValueError:

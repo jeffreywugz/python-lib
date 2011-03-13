@@ -1,12 +1,6 @@
 import sys, os
-from functools import reduce
 my_lib_dir = os.path.dirname(os.path.abspath(__file__))
-import copy
-import re
-import subprocess
 import time
-import string
-from itertools import groupby
 
 class GErr(Exception):
     def __init__(self, msg, obj=None):
@@ -58,20 +52,6 @@ def print_table(table):
     for i in table:
         print('\t'.join([str(j) for j in i]))
         
-def safe_eval(expr, globals={}, locals={}, default=None):
-    try:
-        return eval(expr, globals, locals)
-    except Exception as e:
-        return default
-    
-class Env(dict):
-    def __init__(self, d={}, **kw):
-        dict.__init__(self)
-        self.update(d, **kw)
-
-    def __getattr__(self, name):
-        return self.get(name)
-
 class BlockStream:
     tab_stop = '    '
     Debug, Info, Warning, Error = 1, 0, -1, -2
@@ -93,62 +73,3 @@ class BlockStream:
     def __lshift__(self, content):
         self.out(content)
         
-def shell(cmd):
-    ret = subprocess.call(cmd, shell=True)
-    sys.stdout.flush()
-    return ret
-
-def popen(cmd):
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate() 
-    if p.returncode != 0 or err:
-        raise GErr('%s\n%s'%(err, out), cmd)
-    return out
-    
-def safe_popen(cmd):
-    try:
-        return popen(cmd)
-    except GErr as e:
-        return "Error:\n" + str(e)
-        
-def read(path):
-    with open(path, 'r') as f:
-        return f.read()
-    
-def safe_read(path):
-    try:
-        with open(path, 'r') as f:
-            return f.read()
-    except IOError:
-        return ''
-
-def write(path, content):
-    with open(path, 'w') as f:
-        f.write(content)
-    
-def load_kv_config(f, tag="_config"):
-    content = safe_read(f)
-    match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
-    if match: content = match.group(1)
-    return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
-
-class Log:
-    def __init__(self, path):
-        self.path = path
-        self.file = open(path, 'a+', 1)
-
-    def __del__(self):
-        self.file.close()
-        
-    def clear(self):
-        pass
-    
-    def record(self, *fields):
-        list = [time.time()]
-        list.extend(fields)
-        self.file.write(repr(list)+'\n')
-
-    def get(self):
-        lines = self.file.readlines()
-        values = [safe_eval(line) for line in lines]
-        return [_f for _f in values if _f]

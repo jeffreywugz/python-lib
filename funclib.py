@@ -1,10 +1,9 @@
+'''
+data structure, algorithm
+'''
 from functools import *
 import itertools
 import copy
-import re
-import itertools
-import pprint
-from core import *
 
 class CheckException(Exception):
     def __init__(self, msg, obj=None):
@@ -16,6 +15,20 @@ class CheckException(Exception):
 
     def __repr__(self):
         return 'CheckException(%s, %s)'%(repr(self.msg), repr(self.obj))
+
+def safe_eval(expr, globals={}, locals={}, default=None):
+    try:
+        return eval(expr, globals, locals)
+    except Exception as e:
+        return default
+    
+class Env(dict):
+    def __init__(self, d={}, **kw):
+        dict.__init__(self)
+        self.update(d, **kw)
+
+    def __getattr__(self, name):
+        return self.get(name)
 
 ######################################## Func ########################################
 def ck(predict, obj, msg):
@@ -76,6 +89,10 @@ def flip(func):
     return flip_func
 
 ######################################## List ########################################
+def list_get(li, idx, default=None):
+    if len(li) > idx: return li[idx]
+    else: return default
+    
 def list_flatten(li):
     if type(li) == list or type(li) == tuple:
         return reduce(lambda x,y:x+y, list(map(list_flatten, li)), [])
@@ -156,55 +173,9 @@ def dc_map(func, *args):
     list = dc_mul(*args)
     return [func(*x) for x in list]
 
-######################################## String ########################################
-def li(format=' %s'):
-    return lambda seq: ''.join([format% i for i in seq])
-
-def sub2(_str, env=globals(), **kw):
-    """Example: $abc ${abc} ${range(3)|> joiner()}"""
-    def pipe_eval(ps, env):
-        return reduce(lambda x,y: y(x), [safe_eval(p, env) for p in ps.split('|>')])
-    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', lambda m: str(pipe_eval(m.group(2) or m.group(3), dict_updated(env, kw))), _str)
-    
-def sub(template, env={}, **vars):
-    return string.Template(template).safe_substitute(env, **vars)
-
-def msub(template, env={}, **kw):
-    old = ""
-    cur = template
-    new_env = copy.copy(env)
-    new_env.update(kw)
-    while cur != old:
-        old = cur
-        cur = sub(cur, new_env)
-    return cur
-
-def str2dict(template, str):
-    def normalize(str):
-        return re.sub('\$(\w+)', r'${\1:\w+}', str)
-    def tore(str):
-        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
-    rexp = '^%s$' % (tore(normalize(template)))
-    match = re.match(rexp, str)
-    if not match: return {}
-    else: return dict(match.groupdict(), __self__=str)
-
-def str2dict2(tpl, str):
-    rexp = re.sub('\(\w+=(.*?)\)', r'(\1)', tpl)
-    keys = re.findall('\((\w+)=.*?\)', tpl)
-    print rexp, keys
-    match = re.match(rexp, str)
-    if not match: return {}
-    else: return dict(zip(keys, match.groups()), __self__=str)
-    
-def tpl_sub(tpl, target, str):
-    env = str2dict(tpl, str)
-    env.update(_=str)
-    return sub(target, env)
-
-def tpl_shell(tpl, cmd, str):
-    cmd = tpl_sub(tpl, cmd, str)
-    print(cmd)
-    shell(cmd)
-    
+def transpose(matrix):
+    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object 
+    for row in matrix:
+        map(lambda col,i: col.append(i), cols, row)
+    return cols
 
