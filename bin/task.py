@@ -36,10 +36,15 @@ def write(path, content):
 def mkdir(path):
     os.path.exists(path) or os.mkdir(path)
     
-def bg(cmd, output, env={}):
+def bg(cmd, output, env={}, cleanup=None):
     new_env = dict(os.environ, **env)
     with open(output, 'w') as f:
-        return subprocess.Popen(cmd, shell=True, stdin=None, stdout=f, stderr=f, env=new_env)
+        p = subprocess.Popen(cmd, shell=True, stdin=None, stdout=f, stderr=f, env=new_env)
+        def term_handler():
+            if cleanup: cleanup(p.pid)
+            sys.exit()
+        [signal.signal(sig, term_handler) for sig in (signal.SIGABRT, signal.SIGHUP, signal.SIGINT, signal.SIGTERM)]
+        return p
     
 def daemon(func, *args, **kw_args):
     pid = os.fork()
@@ -80,7 +85,7 @@ def lock_some_files(reqs, interval=1):
 
 def task_execute(cmd, env, outfile, codefile):
     env = dict((k,','.join(v)) for k,v in env.items())
-    code = bg(cmd, outfile, env).wait()
+    code = bg(cmd, outfile, env, cleanup=lambda pid: os.kill(pid, signal.SIGTERM)).wait()
     write(codefile, str(code))
     
 def task_start(notify, work_dir, cmd, res_req):
@@ -119,6 +124,7 @@ def task_start_helper(top_dir, cmd):
     if pid:
         signal.pause()
     else:
+        time.sleep(1) # to make sure child not exit after parent call signal.pause()
         daemon(task_start, notify, '%s/%s'%(top_dir, slugify(cmd)), cmd, res_reqs)
 
 if __name__ == '__main__':

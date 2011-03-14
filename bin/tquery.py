@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 '''
+tquery means txt query
 Usage: ./tquery.py path sql
 '''
 
@@ -52,34 +53,51 @@ class KVTable:
     def set(self, k, v):
         self.create_table()
         self.conn.execute('insert or replace into %s(k,v) values(?,?)'%(self.table), (k,v))
-    
-def get_db(path):
-    conn = sqlite3.connect(path + '.db')
+
+def dump2db(conn, table, collector, default_type='float'):
+    def safe_float(x):
+        try:
+            return float(x)
+        except TypeError,ValueError:
+            return None
+    def safe_int(x):
+        try:
+            return int(x)
+        except TypeError,ValueError:
+            return None
+    type_map = dict(float='real',str='text',int='integer',bool='boolean')
+    type_convertor = dict(float=safe_float, str=str, int=safe_int, bool=bool)
     meta = KVTable(conn)
-    if meta.get('status') == 'done': return conn
-    
-    type_map = dict(float='real',str='text',int='integer')
-    header, data = table_load(path)
+    if meta.get(table) == 'done': return conn
+    header,data = collector()
     names = [re.sub(':.*', '', h) for h in header]
-    types = [re.sub('[^:]+:?', '', h, 1) or 'float' for h in header]
+    types = [re.sub('[^:]+:?', '', h, 1) or default_type for h in header]
     try:
         db_types = [type_map[t] for t in types]
     except Exception,e:
         raise QueryErr('no such type', types)
-    data = [map(lambda type, cell: eval(type)(cell), types, row) for row in data]
+    data = [map(lambda type, cell: type_convertor[type](cell), types, row) for row in data]
     cols_scheme = map(lambda name,type: '%s %s'%(name, db_types), names, db_types)
-    conn.execute('create table if not exists _table(%s)'%(','.join(cols_scheme)))
-    conn.executemany('insert or replace into _table(%s) values(%s)'%(','.join(names), ','.join(['?']*len(names))), data)
+    conn.execute('create table if not exists %s(%s)'%(table, ','.join(cols_scheme)))
+    conn.executemany('insert or replace into %s(%s) values(%s)'%(table, ','.join(names), ','.join(['?']*len(names))), data)
     
-    meta.set('status', 'done')
+    meta.set(table, 'done')
     conn.commit()
     return conn
 
+def get_db(path, **collectors):
+    conn = sqlite3.connect(path)
+    [dump2db(conn, table, collector) for table,collector in collectors.items()]
+    return conn
+
+def txt_db(path, table='_table', default_type='float'):
+    return dump2db(sqlite3.connect(path+'.db'), table, lambda :table_load(path), default_type)
+    
 if __name__ == '__main__':
     path = len(sys.argv) > 1 and sys.argv[1] or None
     sql = len(sys.argv) == 3 and sys.argv[2] or 'select * from _table'
     if not path:
         print __doc__
         sys.exit()
-    for cols in get_db(path).execute(sql):
+    for cols in txt_db(path).execute(sql):
         print '\t'.join(map(str, cols))

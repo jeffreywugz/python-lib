@@ -1,3 +1,4 @@
+from funclib import *
 import re, string
 
 def li(format=' %s'):

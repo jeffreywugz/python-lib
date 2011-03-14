@@ -36,6 +36,9 @@ def safe_read(path):
     except IOError:
         return ''
 
+def readlines(path):
+    return safe_read(path).split('\n')
+
 def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
