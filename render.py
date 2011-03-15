@@ -7,6 +7,12 @@ def render_list_as_html(ds, *cols, **kw):
   </table></div>"""
     return sub2(tpl, data=ds, cols=cols)
 
+def render_table(table):
+    tpl = """<div><table border="1" width="100%">
+  ${li('<tr>%s</tr>')([li('<td><pre>%s</pre></td>')(row) for row in data])}
+  </table></div>"""
+    return sub2(tpl, data=table)
+    
 def render_list_as_txt(ds, *cols, **kw):
     def safe_dslice(d, *keys):
         return [d.get(x, None) for x in keys]

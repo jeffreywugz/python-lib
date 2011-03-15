@@ -1,12 +1,19 @@
 #!/usr/bin/python2
 '''
-tquery means txt query
-Usage: ./tquery.py path sql
+tquery means txt query, which will be used to txt files to database tables,
+ and then execute sql query on the database.
+Usage: ./tquery.py <pat> <sql>
+where <pat> will be used to:
+ - indicate text file paths and database table names
+ - specify database path
+Examples:
+./tquery.py '$host.$app'
 '''
 
 import sys, os, os.path
 import re
 import sqlite3
+from glob import glob
 
 class QueryErr(Exception):
     def __init__(self, msg, obj=None):
@@ -19,10 +26,23 @@ class QueryErr(Exception):
 def list_slices(seq, *slices):
     return [seq[i] for i in slices]
 
-def readlines(file):
+def dict_slice(d, *keys):
+    return [d.get(x) for x in keys]
+
+def readlines(path):
     with open(path) as f:
         return f.readlines()
 
+def str2dict(template, str):
+    def normalize(str):
+        return re.sub('\$(\w+)', r'${\1:\w+}', str)
+    def tore(str):
+        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
+    rexp = '^%s$' % (tore(normalize(template)))
+    match = re.match(rexp, str)
+    if not match: return {}
+    else: return dict(match.groupdict(), __self__=str)
+    
 def table_load(path):
     lines = [line.split() for line in readlines(path)]
     return lines[0], lines[1:]
@@ -55,6 +75,7 @@ class KVTable:
         self.conn.execute('insert or replace into %s(k,v) values(?,?)'%(self.table), (k,v))
 
 def dump2db(conn, table, collector, default_type='float'):
+    if not re.match('^\w+$', table): raise Exception('ill formed table name: %s'% table)
     def safe_float(x):
         try:
             return float(x)
@@ -90,14 +111,28 @@ def get_db(path, **collectors):
     [dump2db(conn, table, collector) for table,collector in collectors.items()]
     return conn
 
-def txt_db(path, table='_table', default_type='float'):
+def txt_db(pat,default_type='float'):
+    glob_pat, keys = re.sub('\$\w+', '*', pat), re.findall('\$(\w+)', pat)
+    scheme = filter(lambda (p,d): d, [(p, str2dict(pat, p)) for p in glob(glob_pat)])
+    def make_table_loader(p):
+        def loader():
+            return table_load(p)
+        return loader
+    collectors = [('_'.join(dict_slice(d, *keys)) or '_table', make_table_loader(p)) for p,d in scheme]
+    def tables():
+        return ['%s:str'%(k) for k in keys], [dict_slice(d, *keys) for p,d in scheme]
+    if keys: collectors.append(('tables', tables))
+    conn = get_db(pat+'.db', **dict(collectors))
+    return conn
+
+def _txt_db(path, table='_table', default_type='float'):
     return dump2db(sqlite3.connect(path+'.db'), table, lambda :table_load(path), default_type)
     
 if __name__ == '__main__':
-    path = len(sys.argv) > 1 and sys.argv[1] or None
-    sql = len(sys.argv) == 3 and sys.argv[2] or 'select * from _table'
-    if not path:
+    pat = len(sys.argv) > 1 and sys.argv[1] or None
+    sql = len(sys.argv) == 3 and sys.argv[2] or 'select * from tables'
+    if not pat:
         print __doc__
         sys.exit()
-    for cols in txt_db(path).execute(sql):
+    for cols in txt_db(pat).execute(sql):
         print '\t'.join(map(str, cols))
