@@ -127,7 +127,7 @@ def txt_db(pat,default_type='float'):
 
 def _txt_db(path, table='_table', default_type='float'):
     return dump2db(sqlite3.connect(path+'.db'), table, lambda :table_load(path), default_type)
-    
+
 if __name__ == '__main__':
     pat = len(sys.argv) > 1 and sys.argv[1] or None
     sql = len(sys.argv) == 3 and sys.argv[2] or 'select * from tables'

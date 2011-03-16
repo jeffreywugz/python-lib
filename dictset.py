@@ -52,3 +52,11 @@ def ds2table(ds, cols, headers, cell_generator, row_attrs=const({})):
     row_extra = ds_zip(ds, cols, row_attrs)
     return ds_merge(origin, row_extra, *cols)
 
+def ds_aggregation(ds, aggs):
+    aggs = [(k,v(ds)) for k,v in aggs]
+    return ds + aggs
+
+def ds_matv(ds, features, aggs):
+    ds = ds_updated_ex(ds, **dict(features))
+    ds = ds_aggregation(ds, aggs)
+    return ds

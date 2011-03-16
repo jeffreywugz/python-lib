@@ -18,15 +18,16 @@ def get_ext(name):
     return name[name.rfind('.')+1:]
 
 file_types = [
+    ['text', ('txt'), lambda name: '<pre>%s</pre>'% safe_read(name)],
     ['image', ('png', 'gif', 'jpg'), lambda name: '<img src="%s" alt="%s"/>'%(name, "image not found!")],
     ['embed', ('svg', 'swf'), lambda name: '<embed src="%s"/>'%(name)],
     ['csv', ('csv'), lambda name: '<table border="1">%s</table>' % '\n'.join(
             ['<tr>%s</tr>'% '\n'.join(['<td>%s</td>'%cell for cell in row.split(',')]) for row in safe_read(name).split('\n')])],
-    ['text', ('txt'), lambda name: '<pre>%s</pre>'% safe_read(name)],
     ['html', ('html'), lambda name: safe_read(name)],
 ]
 
 def file_render(name):
+    default_render = file_types[0][2]
     for type_def, suffix, render in file_types:
         if get_ext(name) in suffix:
             return render(name)

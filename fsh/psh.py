@@ -10,6 +10,9 @@ import subprocess
 import mimetypes
 from cgi import parse_qs
 from urllib import quote
+import wsgiref.handlers
+
+txt_header = 'Content-type: text/plain\n'
 
 class PshException(exceptions.Exception):
     def __init__(self, msg, obj=None):
@@ -50,7 +53,7 @@ def psh(func, path, content):
         result = eval(func)(path, content)
     except exceptions.Exception,e:
         print e
-        result, tb = str(e), traceback.format_exc()
+        result, tb = e, '%s %s\n%s\n'%(func, path, content) + traceback.format_exc()
     return [result, tb]
 
 def rpc_encode(result, tb):
@@ -92,14 +95,31 @@ def fsh_handler(path, post, query):
     match = re.match('^(.*)/fsh/([^/]*)$', path)
     if not match: return None
     path, method = match.groups()
-    response =  serve_file(os.path.join(my_fsh_dir, method or 'fsh.html'))
+    path = path or '/tmp/scrath'
+    method = method or 'fsh.html'
+    response =  serve_file(os.path.join(my_fsh_dir, method))
     if response: return response
-    return 'text/plain', rpc_encode(*psh(method, path or '/tmp/scratch', post))
+    return 'text/plain', rpc_encode(*psh(method, path, post))
+
+def first_arg(query, key):
+    args = query.get(key, [])
+    if args: return args[0]
+    else: return None
     
-def app(path, post, query):
-    post = query.get('post') or post
-    handlers = [fsh_handler, index_handler, dir_handler, file_handler, err_handler]
-    mime, content = try_these(handlers, path, post, query)
+def psh_cgi_handler(post, query):
+    path = first_arg(query, 'path') or '/tmp/scrath'
+    method = first_arg(query, 'method') or 'get'
+    return 'text/plain', rpc_encode(*psh(method, path, post))
+
+def psh_app(path, post, query):
+    # print txt_header
+    # print repr(path), repr(post), repr(query)
+    post = query.get('post', post)
+    if path:
+        handlers = [fsh_handler, index_handler, dir_handler, file_handler, err_handler]
+        mime, content = try_these(handlers, path, post, query)
+    else:
+        mime, content = psh_cgi_handler(post, query)
     return ('200 OK', [('Content-Type', mime)]), content
 
 def make_wsgi_app(app):
@@ -115,6 +135,11 @@ def make_wsgi_server(app, port=8000):
     return make_server('', port, app)
     
 if __name__ == '__main__':
-    port= len(sys.argv) == 2 and int(sys.argv[1]) or 8000
-    print "listening on port: ", port
-    make_wsgi_server(make_wsgi_app(app), port).serve_forever()
+    app = make_wsgi_app(psh_app)
+    if len(sys.argv) == 1:
+        import cgitb; cgitb.enable()
+        wsgiref.handlers.CGIHandler().run(app)
+    else:
+        port= int(sys.argv[1])
+        print "listening on port: ", port
+        make_wsgi_server(app, port).serve_forever()

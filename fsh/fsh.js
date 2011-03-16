@@ -12,9 +12,12 @@ function rpcDecode(str){
     else return content;
 }
 
-function get() rpcDecode(http('get'))
-function set(content) rpcDecode(http('set', content))
-function popen(cmd) rpcDecode(http('popen', cmd))
+var rpc_path;
+var query_path = getQueryArgs()['path'] || '';
+function rpc_init() rpc_path = getUrl().search(/fsh\.html$/) == -1? function(x) x: function(x) 'psh.cgi?' + encodeQueryString({path:query_path, method:x}) + '&'
+function get() rpcDecode(http(rpc_path('get')))
+function set(content) rpcDecode(http(rpc_path('set'), content))
+function popen(cmd) rpcDecode(http(rpc_path('popen'), cmd))
 
 function isHtml(s) s && (s.match(/<.*?>/g) || []).length > 10
 function preHtml(s) isHtml(s)? s: '<pre onClick="selectNode(this.firstChild)">' + s + '</pre>'

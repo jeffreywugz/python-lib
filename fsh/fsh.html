@@ -30,6 +30,7 @@
     }
     function initApp(){
         var panel = $('fish');
+        rpc_init();
         var fsh = fish(popen_wrapper, panel, filter, 'Fsh');
         panel.insertBefore(bind($n('a'), {id:'ref'}), $s(panel, 'lish'));
         fsh('', get());

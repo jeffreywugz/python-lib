@@ -40,7 +40,7 @@ def bg(cmd, output, env={}, cleanup=None):
     new_env = dict(os.environ, **env)
     with open(output, 'w') as f:
         p = subprocess.Popen(cmd, shell=True, stdin=None, stdout=f, stderr=f, env=new_env)
-        def term_handler():
+        def term_handler(sig, frame):
             if cleanup: cleanup(p.pid)
             sys.exit()
         [signal.signal(sig, term_handler) for sig in (signal.SIGABRT, signal.SIGHUP, signal.SIGINT, signal.SIGTERM)]
