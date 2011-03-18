@@ -9,7 +9,8 @@ else
     binfile=$0;
 fi
 bindir=`dirname $binfile`
-errorfile=/tmp/$file.cgi.error
+errfile=/tmp/$file.cgi.err
 sudo -n -u ans42 rm -rf $errorfile 2>&1
-sudo -E -n -u ans42 bash -c "export HOME=/home/ans42; . /home/ans42/.bashrc; $bindir/psh.py 2>$errorfile" || (echo '<pre style="color:red">'; cat $errorfile; echo '</pre>')
+sudo -E -n -u ans42 bash -c "export HOME=/home/ans42; . /home/ans42/.bashrc; $bindir/psh.py 2>$errfile" || \
+    (echo 'Content-Type: text/html\n\n' '<pre style="color:red">'; cat $errfile; echo '</pre>')
 

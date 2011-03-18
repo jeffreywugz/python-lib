@@ -6,6 +6,7 @@ my_fsh_dir = os.path.dirname(os.path.abspath(__file__))
 import re
 import traceback
 import exceptions
+from cStringIO import StringIO
 import subprocess
 import mimetypes
 from cgi import parse_qs
@@ -28,7 +29,7 @@ class PshException(exceptions.Exception):
 def popen(path, cmd):
     p = subprocess.Popen(cmd, cwd=os.path.dirname(path), shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
-    if p.returncode != 0 or err:
+    if p.returncode != 0:
         raise PshException('%s\n%s'%(err, out), cmd)
     return out
     
@@ -109,7 +110,11 @@ def first_arg(query, key):
 def psh_cgi_handler(post, query):
     path = first_arg(query, 'path') or '/tmp/scrath'
     method = first_arg(query, 'method') or 'get'
-    return 'text/plain', rpc_encode(*psh(method, path, post))
+    sys.stdout = output = StringIO()
+    ret = psh(method, path, post)
+    output.getvalue()
+    sys.stdout = sys.__stdout__
+    return 'text/plain', rpc_encode(*ret)
 
 def psh_app(path, post, query):
     # print txt_header

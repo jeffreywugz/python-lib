@@ -22,7 +22,13 @@ def safe_eval(expr, globals={}, locals={}, default=None):
         return eval(expr, globals, locals)
     except Exception as e:
         return default
-    
+
+def safe_call(func, *args, **kw):
+    try:
+        return func(*args, **kw)
+    except Exception,e:
+        return None
+
 class Env(dict):
     def __init__(self, d={}, **kw):
         dict.__init__(self)
@@ -31,7 +37,18 @@ class Env(dict):
     def __getattr__(self, name):
         return self.get(name)
 
+def alphanum_key(s):
+    """ Turn a string into a list of string and number chunks.
+        "z23a" -> ["z", 23, "a"]
+    """
+    def tryint(s):
+        try:
+            return int(s)
+        except:
+            return s
+    return [tryint(c) for c in re.split('([0-9]+)', s)]
 ######################################## Func ########################################
+
 def ck(predict, obj, msg):
     if not predict:
         raise CheckException(obj, msg)
@@ -149,11 +166,11 @@ def dict_slice2(d, *keys):
 def dict_map(func, d):
     return dict([(k, func(v)) for (k,v) in list(d.items())])
 
-def dict_trans(d, **kw):
-    def call_or_not(v, d):
-        if callable(v): return v(**d)
-        else: return d
-    return dict_map(lambda v: call_or_not(v, d), kw)
+def dict_trans(_d, **kw):
+    def call_or_not(v, _d):
+        if callable(v): return v(**_d)
+        else: return _d
+    return dict_map(lambda v: call_or_not(v, _d), kw)
     
 def dict_updated(d, extra={}, **kw):
     new_dict = copy.copy(d)

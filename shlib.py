@@ -5,6 +5,7 @@ import sys, os, os.path
 import re
 import subprocess
 from collections import OrderedDict
+from shutil import rmtree
 import fcntl
 
 def shell(cmd):
@@ -52,6 +53,9 @@ def locked_write(path, content):
 def mkdir(path):
     os.path.exists(path) or os.mkdir(path)
     
+def rm(path):
+    os.path.exists(path) and os.unlink(path)
+
 def bg(cmd, output):
     with open(output, 'w') as f:
       return subprocess.Popen(cmd, shell=True, stdin=None, stdout=f, stderr=f)
@@ -109,6 +113,12 @@ class KVFile:
 #     match = re.match('begin %s(.+) end %s'%(tag, tag), content, re.S)
 #     if match: content = match.group(1)
 #     return dict(re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M))
+def get_sec(sec, content):
+    return re.search('^\.%s *\n----[^\n]*\n(.*?)\n----'% sec, content, re.M|re.S).group(1)
+
+def get_kv_pairs(content):
+    return re.findall(r'^\s*([^#]\S*)\s*=\s*(\S*)\s*$', content, re.M)
+
 
 class Log:
     def __init__(self, path):
