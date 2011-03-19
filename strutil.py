@@ -1,8 +1,8 @@
 from funclib import *
 import re, string
 
-def li(format=' %s'):
-    return lambda seq: ''.join([format% i for i in seq])
+def li(format='%s', sep=' '):
+    return lambda seq: sep.join([format% i for i in seq])
 
 def sub2(_str, env=globals(), **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()}"""

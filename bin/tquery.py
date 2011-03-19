@@ -84,6 +84,19 @@ class KVTable:
         self.create_table()
         self.conn.execute('insert or replace into %s(k,v) values(?,?)'%(self.table), (k,v))
 
+def get_schema(spec, default_type='float'):
+    type_map = dict(float='real',str='text',int='integer',bool='boolean')
+    names = [re.sub(':.*', '', h) for h in spec]
+    types = [re.sub('[^:]+:?', '', h, 1) or default_type for h in spec]
+    try:
+        db_types = [type_map[t] for t in types]
+    except Exception,e:
+        raise QueryErr('no such type', types)
+    return names, db_types
+
+def create_db_schema(names, types):
+    return ','.join(map(lambda name,type: '%s %s'%(name, type), names, types))
+    
 def dump2db(conn, table, collector, default_type='float'):
     if not re.match('^\w+$', table): raise Exception('ill formed table name: %s'% table)
     def safe_float(x):
@@ -96,25 +109,36 @@ def dump2db(conn, table, collector, default_type='float'):
             return int(x)
         except TypeError,ValueError:
             return None
-    type_map = dict(float='real',str='text',int='integer',bool='boolean')
-    type_convertor = dict(float=safe_float, str=str, int=safe_int, bool=bool)
+    type_convertor = dict(real=safe_float, text=str, integer=safe_int, boolean=bool)
     meta = KVTable(conn)
-    if meta.get(table) == 'done': return conn
+    if meta.get(table) == 'done' and not getattr(collector, 'nocache', False): return conn
     header,data = collector()
-    names = [re.sub(':.*', '', h) for h in header]
-    types = [re.sub('[^:]+:?', '', h, 1) or default_type for h in header]
-    try:
-        db_types = [type_map[t] for t in types]
-    except Exception,e:
-        raise QueryErr('no such type', types)
+    names, types = get_schema(header)
     data = [map(lambda type, cell: type_convertor[type](cell), types, row) for row in data]
-    cols_scheme = map(lambda name,type: '%s %s'%(name, type), names, db_types)
-    conn.execute('create table if not exists %s(%s)'%(table, ','.join(cols_scheme)))
+    conn.execute('create table if not exists %s(%s)'%(table, create_db_schema(names, types)))
     conn.executemany('insert or replace into %s(%s) values(%s)'%(table, ','.join(names), ','.join(['?']*len(names))), data)
     
     meta.set(table, 'done')
     conn.commit()
     return conn
+
+def make_cached_func(conn, table, keys_spec, values_spec, generator):
+    '''all keys must be string'''
+    key_names, key_types = get_schema(keys_spec)
+    all_names, all_types = get_schema(keys_spec + values_spec)
+    create_sql = 'create table if not exists %s(%s)'%(table, create_db_schema(all_names, all_types))
+    query_sql = 'select * from %s where %%s'%(table)
+    insert_sql = 'insert or replace into %s(%s) values(%s)'%(table, ','.join(all_names), ','.join(['?']*len(all_names)))
+    conn.execute(create_sql)
+    def where(keys):
+        return ' and '.join(map(lambda k,v: '%s="%s"'%(k,v), key_names, keys))
+    def cached_func(*keys):
+        query = query_sql % where(keys)
+        if not list(conn.execute(query)):
+            conn.execute(insert_sql, list(keys) + list(generator(*keys)))
+            conn.commit()
+        return list(conn.execute(query))[0]
+    return cached_func
 
 class SqliteAgg:
     def __init__(self, **kw):
@@ -207,6 +231,7 @@ def alphanum_key(key1):
 
 def get_db(path, **collectors):
     conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
     sqlite3.enable_callback_tracebacks(True)
     conn.create_collation("alphanum", lambda x1,x2: cmp(alphanum_key(x1), alphanum_key(x2)))
     conn.create_aggregate("std", 1, SqliteStd)
