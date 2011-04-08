@@ -25,7 +25,7 @@
     }
         
     function popen_wrapper(cmd){
-        bind($('ref'), {href:'popen?' + encodeQueryString({post:cmd}), innerHTML: 'Ref This Cmd Output'});
+        bind($('ref'), {href:rpc_path('popen') + encodeQueryString({post:cmd}), innerHTML: 'Ref This Cmd Output'});
         return popen(cmd);
     }
     function initApp(){

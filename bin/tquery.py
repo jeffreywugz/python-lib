@@ -14,6 +14,8 @@ import sys, os, os.path
 import re
 import sqlite3
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from glob import glob
 
@@ -24,6 +26,12 @@ class QueryErr(Exception):
 
     def __str__(self):
         return "Query Exception: %s\n%s"%(self.msg, self.obj)
+
+def transpose(matrix):
+    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object 
+    for row in matrix:
+        map(lambda col,i: col.append(i), cols, row)
+    return cols
 
 def safe_int(x, default=0):
     try:
@@ -112,6 +120,7 @@ def dump2db(conn, table, collector, default_type='float'):
     type_convertor = dict(real=safe_float, text=str, integer=safe_int, boolean=bool)
     meta = KVTable(conn)
     if meta.get(table) == 'done' and not getattr(collector, 'nocache', False): return conn
+    conn.execute('drop table if exists %s'%(table))
     header,data = collector()
     names, types = get_schema(header)
     data = [map(lambda type, cell: type_convertor[type](cell), types, row) for row in data]
@@ -160,8 +169,8 @@ def make_sqlite_agg_class(func):
             return func(self.data)
     return SqliteAggClass
 
-SqliteStd = make_sqlite_agg_class(lambda data:np.std(np.transpose(data)[0]))
-SqliteCorrcoef = make_sqlite_agg_class(lambda data:np.corrcoef(*np.transpose(data)[:2]))
+SqliteStd = make_sqlite_agg_class(lambda data:np.std(transpose(data)[0]))
+SqliteCorrcoef = make_sqlite_agg_class(lambda data:np.corrcoef(*transpose(data))[0][1])
 
 def make_plot_func(func):
     def parse_matplot_spec(spec):
@@ -171,7 +180,7 @@ def make_plot_func(func):
 
     def plot(data):
         if (not data) or (not data[-1]) : return None
-        cols = np.transpose(data)
+        cols = transpose(data)
         spec, cols = cols[0][-1], cols[1:]
         path, args = parse_matplot_spec(spec)
         plt.figure()
@@ -218,7 +227,7 @@ SqliteScatter = make_sqlite_plot_func(scatter)
 SqliteCorr = make_sqlite_plot_func(corr)
 SqliteBar = make_sqlite_plot_func(bar)
 
-def alphanum_key(key1):
+def alphanum_key(s):
     """ Turn a string into a list of string and number chunks.
         "z23a" -> ["z", 23, "a"]
     """
@@ -231,6 +240,7 @@ def alphanum_key(key1):
 
 def get_db(path, **collectors):
     conn = sqlite3.connect(path)
+    conn.text_factory = str
     conn.row_factory = sqlite3.Row
     sqlite3.enable_callback_tracebacks(True)
     conn.create_collation("alphanum", lambda x1,x2: cmp(alphanum_key(x1), alphanum_key(x2)))
