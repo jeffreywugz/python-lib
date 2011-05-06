@@ -26,6 +26,15 @@ class PdoException(exceptions.Exception):
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)
 
+def li(format='%s', sep=' '):
+    return lambda seq: sep.join([format% i for i in seq])
+
+def sub2(_str, env=globals(), **kw):
+    """Example: $abc ${abc} ${range(3)|> joiner()}"""
+    def pipe_eval(ps, env):
+        return reduce(lambda x,y: y(x), [safe_eval(p, env) for p in ps.split('|>')])
+    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', lambda m: str(pipe_eval(m.group(2) or m.group(3), dict_updated(env, kw))), _str)
+
 def shell(cmd):
     return subprocess.call(cmd, shell=True)
 

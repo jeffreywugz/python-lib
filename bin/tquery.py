@@ -15,7 +15,7 @@ import re
 import sqlite3
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from glob import glob
 
@@ -169,8 +169,18 @@ def make_sqlite_agg_class(func):
             return func(self.data)
     return SqliteAggClass
 
+def weighted_avg(x, w):
+    return np.average(x, weights=w)
+def correlate(x, y):
+    return np.mean(np.correlate(x, y))
+def auto_correlate(x):
+    return np.mean(np.correlate(x, x))
+
 SqliteStd = make_sqlite_agg_class(lambda data:np.std(transpose(data)[0]))
+SqliteCorrelate = make_sqlite_agg_class(lambda data:correlate(*transpose(data)))
+SqliteAutoCorrelate = make_sqlite_agg_class(lambda data:auto_correlate(transpose(data)[0]))
 SqliteCorrcoef = make_sqlite_agg_class(lambda data:np.corrcoef(*transpose(data))[0][1])
+SqliteWeightedAvg = make_sqlite_agg_class(lambda data:weighted_avg(*transpose(data)))
 
 def make_plot_func(func):
     def parse_matplot_spec(spec):
@@ -213,6 +223,10 @@ def corr(args, x, y):
     plt.ylim(0, 1)
     plt.xcorr(x, y, maxlags=safe_int(args, None))
 
+def acorr(args, x):
+    plt.ylim(0, 1)
+    plt.xcorr(x, y, maxlags=safe_int(args, None))
+
 def bar(args, *x):
     if not x: return None
     w = 0.8/len(x)
@@ -244,8 +258,11 @@ def get_db(path, **collectors):
     conn.row_factory = sqlite3.Row
     sqlite3.enable_callback_tracebacks(True)
     conn.create_collation("alphanum", lambda x1,x2: cmp(alphanum_key(x1), alphanum_key(x2)))
+    conn.create_aggregate("wavg", 2, SqliteWeightedAvg)
     conn.create_aggregate("std", 1, SqliteStd)
     conn.create_aggregate("corrcoef", 2, SqliteCorrcoef)
+    conn.create_aggregate("correlate", 2, SqliteCorrelate)
+    conn.create_aggregate("auto_correlate", 1, SqliteAutoCorrelate)
     conn.create_aggregate("plot", 2, SqlitePlot)
     conn.create_aggregate("plot", 3, SqlitePlot)
     conn.create_aggregate("hist", 2, SqliteHist)
@@ -279,6 +296,6 @@ if __name__ == '__main__':
     if not pat:
         print __doc__
         sys.exit()
-    print sql
+    sys.stderr.write('%s\n'%sql)
     for cols in txt_db(pat).execute(sql):
         print '\t'.join(map(str, cols))

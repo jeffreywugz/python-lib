@@ -2,7 +2,7 @@
 """
 example usage:
 shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} db=config  gd04-root-passwd=a
-  where action = inspect | raw | run | bg | cat | view 
+  where action = inspect | raw | rawbg | run | bg | cat | view 
 """
 
 import sys
@@ -127,7 +127,8 @@ class Job:
     def __init__(self, user, hosts, dir, cmd, env):
         self.ctrlhost, self.user, self.hosts, self.dir, self.cmd, self.env = hostname(), user, hosts, os.path.realpath(dir), cmd, env
         self.actions = {
-            'raw': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'rawbg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (cd $dir; $cmd; if [ $? == 0 ]; then echo JobSuccess: raw-cmd; else echo JobException: raw-cmd; fi) >/tmp/$last_level_dir/$host.log 2>&1 &",
+            'raw': "(cd $dir; $cmd;)",
             'run': "sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'",
             'bg': "[ -d /tmp/$last_level_dir ] || mkdir /tmp/$last_level_dir; (sshpass -p '$passwd' scp -r $dir $user@$host:; sshpass -p '$passwd' ssh $user@$host '. .bashrc; cd $last_level_dir; $cmd'; if [ $? == 0 ]; then echo JobSuccess: ssh-cmd; else echo JobException: ssh-cmd;fi ) >/tmp/$last_level_dir/$host.log 2>&1",
             'cat': "echo -e '\n-----$host-----\n'; tail -n 100 /tmp/$last_level_dir/$host.log",
@@ -188,7 +189,7 @@ class Job:
             bg_colors = (('green', 'black'), ('red', 'red'))
             return bg_colors[output.find('JobException:') != -1][output.find('JobSuccess:') != -1]
         def output_view(output):
-            return re.sub("(JobException:.*\n)", '<div style="color:red">\\1</div>', output, re.M)
+            return re.sub("(JobException:.*\n)", '<div style="background:black; color:white">\\1</div>', output, re.M)
         result = [row_pat%(host_bg(output), host, output_view(output)) for host,output in self.popen(self.actions['view'])]
         return "<table border=1>%s</table>" % '\n'.join(result)
     
