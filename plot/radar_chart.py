@@ -1,3 +1,4 @@
+#!/usr/bin/python2
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -142,3 +143,4 @@ if __name__ == '__main__':
     plt.figtext(0.5, 0.965,  '5-Factor Solution Profiles Across Four Scenarios', 
                ha='center', color='black', weight='bold', size='large')        
     plt.show()
+
