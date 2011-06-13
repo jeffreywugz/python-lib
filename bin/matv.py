@@ -5,9 +5,8 @@ Usages:
 Examples:
   matv.py 'echo $r $c' 'A B C' 'D E'
 '''
-import sys
-import os
-import string
+import sys, os
+import re, string
 from subprocess import Popen, PIPE, STDOUT
 
 def sub(tpl, **kw):
@@ -25,19 +24,25 @@ def map2d(func, mat):
 def map_mesh(cell, rows, cols):
     return map2d(cell, mesh(rows, cols))
 
-def mat_render(mat):
-    return '\n'.join([',\t'.join(map(str, r)) for r in mat])
+def mat_render(mat, sep=',\t'):
+    sep = sep.replace('\\t', '\t')
+    return '\n'.join([sep.join(map(str, r)) for r in mat])
 
 def mat_add_header(mat, rows, cols):
     return [['X'] + list(cols)] + map(lambda h, r: [h]+list(r), rows, mat)
 
-def mat_sh(cmd, rows, cols):
-    mat = map_mesh(lambda (r,c): popen(sub(cmd, r=r, c=c)).strip(), rows, cols)
-    return mat_render(mat_add_header(mat, rows, cols))
+def mat_sh(cmd, rows, cols, sep='\t'):
+    def cmd_part(t):
+        return re.sub('\[.*?\]', '', t)
+    def header_part(t): 
+        m = re.search('\[(.*?)\]', t)
+        return m and m.group(1) or t
+    mat = map_mesh(lambda (r,c): popen(sub(cmd, r=cmd_part(r), c=cmd_part(c))).strip(), rows, cols)
+    return mat_render(mat_add_header(mat, map(header_part, rows), map(header_part, cols)), sep)
 
-def mat_sh_wrapper(cmd, rows, cols):
-    return mat_sh(cmd, rows.split(','), cols.split(','))
+def mat_sh_wrapper(cmd, rows, cols, sep='\t'):
+    return mat_sh(cmd, rows.split(','), cols.split(','), sep=sep)
     
 if __name__ == '__main__':
-    if not len(sys.argv) == 4:sys.stderr.write(__doc__)
-    else: print mat_sh_wrapper(*sys.argv[1:])
+    if len(sys.argv) == 4 or len(sys.argv) == 5: print mat_sh_wrapper(*sys.argv[1:])
+    else: sys.stderr.write(__doc__)
