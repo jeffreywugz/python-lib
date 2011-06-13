@@ -1,5 +1,5 @@
 .PHONY: all test clean
-all: test-task
+all: test-matv
 test-me:
 	me echo x=1 y=2 z
 	me --init='a=[1,2,3]' a
@@ -16,6 +16,8 @@ test-job:
 	bin/job.py ans42:a@gd[46-50]:test ls -/bg
 test-task:
 	bin/task.py 'echo start; sleep 20; echo done'
+test-matv:
+	bin/matv.py 'echo $$r $$c' 'A,B,C' 'D,E,F'
 test-sgen:
 	bin/sgen.py test/sgen.txt
 test-pdo:
