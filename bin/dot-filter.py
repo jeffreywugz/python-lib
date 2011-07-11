@@ -41,26 +41,20 @@ def html_escape(text):
     """Produce entities within text."""
     return "".join(html_escape_table.get(c,c) for c in text)
 
-def html_escape2(text):
-    return html_escape(html_escape(text))
-
 def pre_filter(str):
     def escape(str):
-        return re.match('^\s*: ', str) and re.sub('^(\s*):(.*)$', r'\1\2', str) or html_escape2(str)
+        return re.match('^\s*: ', str) and re.sub('^(\s*):(.*)$', r'\1\2', str) or html_escape(str)
     def pre_sub(str):
         return '<font face="monospace">%s</font>'% re.sub('^(.*?)$', lambda m: escape(m.group(1)) + '<br align="left"/>', str, flags=re.M)
     return re.sub('<pre>(.*?)</pre>', lambda m: pre_sub(port_sub(m.group(1))), str, flags=re.S)
 
-def port_sub(str):
-    return re.sub('^(\s*)(.*):(\w+)->\s*$', lambda m: r'%s: <table><tr><td port="%s">%s</td></tr></table>'%(m.group(1), m.group(3), html_escape2(m.group(2))), str, flags=re.M)
-
 def call_filter(str):
     def call_escape(str):
         if re.match('^.*:(\w+)->\s*$', str):
-            return re.sub('^(.*):(\w+)->\s*$', lambda m: r'<tr><td port="%s" align="left" border="1"><b>%s</b></td></tr>'%(html_escape2(m.group(2)), m.group(1)), str)
+            return re.sub('^(.*):(\w+)->\s*$', lambda m: r'<tr><td port="%s" align="left" border="1"><b>%s</b></td></tr>'%(html_escape(m.group(2)), m.group(1)), str)
         else:
-            return '<tr><td align="left">%s</td></tr>'%(html_escape2(str))
-        return re.match('^\s*: ', str) and re.sub('^(\s*):(.*)$', r'\1\2', str) or html_escape2(str)
+            return '<tr><td align="left">%s</td></tr>'%(html_escape(str))
+        return re.match('^\s*: ', str) and re.sub('^(\s*):(.*)$', r'\1\2', str) or html_escape(str)
     def call_sub(str):
         return re.sub('^(.*?)$', lambda m: call_escape(m.group(1)), str, flags=re.M)
     return re.sub('<call>(.*?)</call>', lambda m: '<table border="0" bgcolor="lightgray">%s</table>'%(call_sub(m.group(1))), str, flags=re.S)
