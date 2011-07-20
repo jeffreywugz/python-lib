@@ -20,14 +20,19 @@ int main()<br align="left">
 """
 
 import sys
+import os
+app_dir = os.path.dirname(os.path.abspath(__file__))
+lib_paths = ['mako.zip', '../lib/mako.zip']
+sys.path.extend([os.path.join(app_dir, path) for path in lib_paths])
 import re
 from subprocess import Popen, PIPE, STDOUT
+from mako.template import Template
 
 def popen(cmd):
     return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
 
-def cpp(path):
-    return popen('cpp %s' % path)
+def mako_render(path):
+    return Template(filename=path).render()
 
 html_escape_table = {
     "&": "&amp;",
@@ -60,7 +65,7 @@ def call_filter(str):
     return re.sub('<call>(.*?)</call>', lambda m: '<table border="0" bgcolor="lightgray">%s</table>'%(call_sub(m.group(1))), str, flags=re.S)
     
 if __name__ == '__main__':
-    print call_filter(cpp(sys.argv[1]))
+    print call_filter(mako_render(sys.argv[1]))
 
                  
 

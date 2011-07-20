@@ -13,6 +13,9 @@ def shell(cmd):
     sys.stdout.flush()
     return ret
 
+def _popen(cmd):
+    return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+
 def popen(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate() 
