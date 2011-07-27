@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 from matplotlib.pyplot import figure, show
 from scipy.stats import gaussian_kde
 from numpy.random import normal

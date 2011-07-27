@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 '''
 Usage:
 ./task.py 'cmd # res-reqs' [top-dir]

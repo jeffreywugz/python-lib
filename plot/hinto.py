@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 #Initial idea from David Warde-Farley on the SciPy Cookbook
 import sys
 import re

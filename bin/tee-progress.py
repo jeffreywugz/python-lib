@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 '''
 tee-progress.py ref-file
 '''

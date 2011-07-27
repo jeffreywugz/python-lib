@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
 """
 pdo which means `pattern do', can be use to do some operation based on a seqence of strings

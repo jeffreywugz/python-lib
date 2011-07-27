@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 """
 ./dot-filter.py in-file |dot -Tpng -o out.png
 this filter will call `cpp' first, then replace `<pre>.*</pre>' blocks by as following example shows:

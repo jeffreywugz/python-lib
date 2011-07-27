@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 """
 example usage:
 shell $ job.py ans42:111111@gd[46-50],slaves,-master:boot make boot -/{action} db=config  gd04-root-passwd=a

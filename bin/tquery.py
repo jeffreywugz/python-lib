@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 '''
 tquery means txt query, which will be used to translate txt files to database tables,
  and then execute sql query on the database.

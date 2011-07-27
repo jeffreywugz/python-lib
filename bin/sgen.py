@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
 """
 sgen which means `stream generator', can be used to filter text stream
