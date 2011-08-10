@@ -23,6 +23,7 @@ class Dump2(Thread):
           buf = self.src.recv(1024)
           if not buf:
              self.src.close()
+             self.dest.close()
              return
           self.hook(buf)
           self.dest.send(buf)

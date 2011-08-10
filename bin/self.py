@@ -3,9 +3,8 @@
 import sys
 import os, os.path
 self_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.extend([self_dir])
-import re
-import exceptions
+sys.path.extend([self_dir, '%s/..'%self_dir])
+from common import *
 from itertools import groupby
 from collections import Callable
 from pprint import pformat
@@ -47,7 +46,7 @@ def parse_cmd_args(args, env):
         if not arg.startswith(':'): return arg
         try:
             return eval(arg[1:], env)
-        except exceptions.Exception as e:
+        except Exception as e:
             return GErr("arg %s eval error"%arg, e)
     args = list(map(parse_arg, args))
     args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
@@ -73,7 +72,7 @@ def cmd_pipe_eval(env, args):
     list_args, kw_args = parse_cmd_args(args[1:], env)
     try:
         func = args[0]
-    except exceptions.IndexError:
+    except IndexError:
         raise GErr('run_cmd(): need to specify a callable object.', args)
     func = eval(func, env)
     if not isinstance(func, Callable):
@@ -120,7 +119,7 @@ def get_default_tasks():
     local_tasks = ['Task.py', '../Task.py', '../../Task.py']
     try:
         top_index = [os.path.exists(f) for f in top_tasks].index(True)
-    except exceptions.ValueError:
+    except ValueError:
         top_index = 0
     tasks = local_tasks[:top_index+1] + top_tasks[:top_index+1]
     tasks.reverse()
@@ -146,6 +145,9 @@ def lop(op, func, *arg, **kw):
         new_arg = arg + (i,)
         return func(*new_arg, **kw)
     return op(callback, list)
+
+def subx(tpl, **kw):
+    return sub2(tpl, p=popen, **kw)
 
 tasks = get_default_tasks()
 # print 'total tasks: %s'%tasks

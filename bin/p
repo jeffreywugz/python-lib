@@ -1,0 +1,75 @@
+#!/usr/bin/env python2
+
+"""
+Usages:
+  p cmd... [: pat] <input  >output
+Examples:  
+  ls *.png |p convert '$t.png $t.jpg'
+  find . -name '*.cpp' -o -name '*.h' |p set-header.py '$t'
+  cat cmds |p 'ssh $host $cmd':  '$host:${cmd:.*}'
+"""
+import sys
+import exceptions
+import traceback
+import string, re
+from subprocess import Popen, PIPE, STDOUT
+
+def sub(template, env={}, **vars):
+    return string.Template(template).safe_substitute(env, **vars)
+
+def li(format='%s', sep=' '):
+    return lambda seq: sep.join([format% i for i in seq])
+
+def popen(cmd):
+    return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+
+def sub2(_str, env=globals(), **kw):
+    """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
+    def normalize(str):
+        return re.sub('`(.*?)`', lambda m: "${p('%s')}"% m.group(1).replace("'", '\''), str)
+    def pipe_eval(ps, env):
+        return reduce(lambda x,y: y(x), [safe_eval(p, env) for p in ps.split('|>')])
+    def handle_repl(m):
+        try:
+            return str(pipe_eval(m.group(1) or m.group(2), dict_updated(env, kw)))
+        except Exception:
+            print m.groups()
+            return '${%s}'%(m.group(1) or m.group(2))
+    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', handle_repl, normalize(_str))
+
+def parse_arg(args):
+    def get_colon_index(args):
+        for i,v in enumerate(args):
+            if v == ':': return i
+        return len(args)
+    def split_by_colon(args):
+        i = get_colon_index(args)
+        return args[:i], args[i+1:]
+    def normalize(str):
+        return re.sub('\$(\w+)', r'${\1:\w+}', str)
+    def src2re(str):
+        return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
+    def cmd_escape(str):
+        return '"%s"'%(str.replace('"', '\"').replace('$', '\$'))
+    cmd, pat = split_by_colon(args)
+    if len(pat) == 0:
+        pat = '^${t:.+?}$'
+    else:
+        pat = pat[0]
+    return ' '.join(cmd), src2re(normalize(pat))
+
+def sub_by_popen(pat, cmd, str):
+    print dict(pat=pat, cmd=cmd)
+    def popen_maybe(cmd):
+        if cmd.startswith(':'):
+            return cmd
+        else:
+            return popen(cmd)
+    return re.sub(pat, lambda m: popen_maybe(sub2(cmd, m.groupdict())).strip(), str, flags=re.M|re.S)
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.stderr.write(__doc__)
+        sys.exit(1)
+    cmd, pat = parse_arg(sys.argv[1:])
+    print sub_by_popen(pat, cmd, sys.stdin.read())
