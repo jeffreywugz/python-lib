@@ -2,11 +2,11 @@
 
 """
 Usages:
-  p cmd... [: pat] <input  >output
+  p cmd... pat=pat post=summary <input  >output
 Examples:  
   ls *.png |p convert '$t.png $t.jpg'
   find . -name '*.cpp' -o -name '*.h' |p set-header.py '$t'
-  cat cmds |p 'ssh $host $cmd':  '$host:${cmd:.*}'
+  cat cmds |p 'ssh $host $cmd' pat='$host:${cmd:.*}'
   ls *.py |p :'${ga.i(1)} $t'
 """
 import sys
@@ -15,7 +15,11 @@ import traceback
 import string, re
 from copy import copy
 from collections import defaultdict
+from itertools import groupby
 from subprocess import Popen, PIPE, STDOUT
+
+def dict_map(func, d):
+    return dict([(k, func(v)) for (k,v) in list(d.items())])
 
 def read(path):
     with open(path) as f:
@@ -24,7 +28,7 @@ def read(path):
 def write(path, content):
     with open(path, 'w') as f:
         f.write(content)
-        
+
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)
 
@@ -49,32 +53,39 @@ def sub2(_str, env=globals(), **kw):
     def pipe_eval(ps, env):
         return reduce(lambda x,y: y(x), [eval(p, env) for p in ps.split('|>')])
     def handle_repl(m):
+        def remove_brace(x):
+            return re.sub('^{(.*)}$', r'\1', x or '')
         try:
-            return str(pipe_eval(m.group(1) or m.group(2), dict_updated(env, kw)))
-        except Exception,e:
-            return '${%s}'%(m.group(1) or m.group(2))
-    return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', handle_repl, normalize(_str))
+            expr = remove_brace(m.group(1)) or remove_brace(m.group(2))
+            return str(pipe_eval(expr, dict_updated(env, kw)))
+        except Exception, e:
+            return '$%s'%(m.group(1) or m.group(2))
+    return re.sub('(?s)\$(\w+)|\$({.+?})', handle_repl, normalize(_str))
+
+def sub2x(template, env={}, **kw):
+    old, cur = "", template
+    new_env = dict_updated(env, **kw)
+    while cur != old:
+        old = cur
+        cur = sub2(cur, new_env)
+    return cur
+
+def parse_cmd_args(args):
+    def parse_arg(arg):
+        if re.match('\w+=', arg): return arg.split('=', 1)
+        else: return (arg.strip(),)
+    args = list(map(parse_arg, args))
+    args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
+    return [i[0] for i in dict(args).get(1, [])], dict(dict(args).get(2, []))
 
 def parse_arg(args):
-    def get_colon_index(args):
-        for i,v in enumerate(args):
-            if v == ':': return i
-        return len(args)
-    def split_by_colon(args):
-        i = get_colon_index(args)
-        return args[:i], args[i+1:]
     def normalize(str):
         return re.sub('\$(\w+)', r'${\1:\w+}', str)
     def src2re(str):
         return re.sub(r'\${(\w+):([^}]+)}', r'(?P<\1>\2)', str)
-    def cmd_escape(str):
-        return '"%s"'%(str.replace('"', '\"').replace('$', '\$'))
-    cmd, pat = split_by_colon(args)
-    if len(pat) >= 1:
-        pat, acc = pat[0], pat[1:]
-    else:
-        pat, acc = '^${t:.+?}$', []
-    return ' '.join(cmd), src2re(normalize(pat)), acc
+    cmd, attrs = parse_cmd_args(args)
+    pat = attrs.get('pat', '^${t:.+?}$')
+    return ' '.join(cmd), src2re(normalize(pat)), attrs
 
 class acctype:
     def __init__(self, x=None):
@@ -113,26 +124,28 @@ class defaultenv(defaultdict):
     def __getattr__(self, x):
         return self[x]
     
-def sub_by_popen(pat, cmd, str, acc):
+def sub_by_popen(pat, cmd, str, attrs):
+    sys.stderr.write('sub_by_popen:%s\n'%dict(attrs, pat=pat, cmd=cmd))
     ga=defaultenv(acctype)
-    env = dict(n=null, popen=popen, p=popen, r=read, w=write, ga=ga)
+    static_env = dict(n=null, popen=popen, p=popen, r=read, w=write, ga=ga)
     def popen_maybe(cmd, env):
         if cmd.startswith(':'):
-            return sub2(cmd[1:], env)
+            return sub2x(cmd[1:], env)
         else:
-            return popen(sub2(cmd, env))
+            return popen(sub2x(cmd, env))
     if pat.find('^^') != -1 or pat.find('$$') != -1:
         flags = re.S
     else:
         flags = re.M|re.S
-    sys.stderr.write('sub_by_popen:%s\n'%dict(pat=pat, cmd=cmd))
-    repl_output = re.sub(pat, lambda m: popen_maybe(cmd, dict_updated(m.groupdict(), **env)).strip(), str, flags=flags)
-    acc_output = '\n'.join([popen_maybe(i, env) for i in acc])
-    return repl_output + acc_output
+    new_attrs = dict_map(lambda v:sub2x(v, static_env), attrs)
+    new_env = dict_updated(new_attrs, **static_env)
+    repl_output = re.sub(pat, lambda m: popen_maybe(cmd, dict_updated(m.groupdict(), **new_env)).strip(), str, flags=flags)
+    post_output = popen_maybe(attrs.get('post', ''), new_env)
+    return repl_output + post_output
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.stderr.write(__doc__)
         sys.exit(1)
-    cmd, pat, acc = parse_arg(sys.argv[1:])
-    print sub_by_popen(pat, cmd, sys.stdin.read(), acc)
+    cmd, pat, attrs = parse_arg(sys.argv[1:])
+    print sub_by_popen(pat, cmd, sys.stdin.read(), attrs)
