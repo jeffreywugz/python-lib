@@ -12,8 +12,18 @@ import sys
 import exceptions
 import traceback
 import string, re
+from copy import copy
+from collections import defaultdict
 from subprocess import Popen, PIPE, STDOUT
 
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+def write(path, content):
+    with open(path, 'w') as f:
+        f.write(content)
+        
 def sub(template, env={}, **vars):
     return string.Template(template).safe_substitute(env, **vars)
 
@@ -23,17 +33,21 @@ def li(format='%s', sep=' '):
 def popen(cmd):
     return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
 
+def dict_updated(d, extra={}, **kw):
+    new_dict = copy(d)
+    new_dict.update(extra, **kw)
+    return new_dict
+
 def sub2(_str, env=globals(), **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
     def normalize(str):
-        return re.sub('`(.*?)`', lambda m: "${p('%s')}"% m.group(1).replace("'", '\''), str)
+        return re.sub('`(.*?)`', lambda m: "${popen('%s')}"% m.group(1).replace("'", '\''), str)
     def pipe_eval(ps, env):
-        return reduce(lambda x,y: y(x), [safe_eval(p, env) for p in ps.split('|>')])
+        return reduce(lambda x,y: y(x), [eval(p, env) for p in ps.split('|>')])
     def handle_repl(m):
         try:
             return str(pipe_eval(m.group(1) or m.group(2), dict_updated(env, kw)))
-        except Exception:
-            print m.groups()
+        except Exception,e:
             return '${%s}'%(m.group(1) or m.group(2))
     return re.sub('(?s)\$(\w+)|\$(?:{(.+?)})', handle_repl, normalize(_str))
 
@@ -59,13 +73,14 @@ def parse_arg(args):
     return ' '.join(cmd), src2re(normalize(pat))
 
 def sub_by_popen(pat, cmd, str):
-    print dict(pat=pat, cmd=cmd)
-    def popen_maybe(cmd):
+    gs, gi = defaultdict(lambda : ''), defaultdict(lambda : 0)
+    env = dict(gs=gs, gi=gi, popen=popen, p=popen, r=read, w=write)
+    def popen_maybe(cmd, env):
         if cmd.startswith(':'):
-            return cmd
+            return sub2(cmd[1:], env)
         else:
-            return popen(cmd)
-    return re.sub(pat, lambda m: popen_maybe(sub2(cmd, m.groupdict())).strip(), str, flags=re.M|re.S)
+            return popen(sub2(cmd, env))
+    return re.sub(pat, lambda m: popen_maybe(cmd, dict_updated(m.groupdict(), **env)).strip(), str, flags=re.M|re.S)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
