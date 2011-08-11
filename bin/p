@@ -7,6 +7,7 @@ Examples:
   ls *.png |p convert '$t.png $t.jpg'
   find . -name '*.cpp' -o -name '*.h' |p set-header.py '$t'
   cat cmds |p 'ssh $host $cmd':  '$host:${cmd:.*}'
+  ls *.py |p :'${ga.i(1)} $t'
 """
 import sys
 import exceptions
@@ -33,6 +34,9 @@ def li(format='%s', sep=' '):
 def popen(cmd):
     return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
 
+def null(x):
+    ''
+    
 def dict_updated(d, extra={}, **kw):
     new_dict = copy(d)
     new_dict.update(extra, **kw)
@@ -66,25 +70,69 @@ def parse_arg(args):
     def cmd_escape(str):
         return '"%s"'%(str.replace('"', '\"').replace('$', '\$'))
     cmd, pat = split_by_colon(args)
-    if len(pat) == 0:
-        pat = '^${t:.+?}$'
+    if len(pat) >= 1:
+        pat, acc = pat[0], pat[1:]
     else:
-        pat = pat[0]
-    return ' '.join(cmd), src2re(normalize(pat))
+        pat, acc = '^${t:.+?}$', []
+    return ' '.join(cmd), src2re(normalize(pat)), acc
 
-def sub_by_popen(pat, cmd, str):
-    gs, gi = defaultdict(lambda : ''), defaultdict(lambda : 0)
-    env = dict(gs=gs, gi=gi, popen=popen, p=popen, r=read, w=write)
+class acctype:
+    def __init__(self, x=None):
+        self.x = x
+        
+    def acc(self, i, initial=None):
+        if initial == None:
+            if type(i) == int:
+                initial = 0
+            elif type(i) == str:
+                initial = ''
+            elif type(i) == list:
+                initial = []
+            elif type(i) == tuple:
+                initial = ()
+            else:
+                initial = None
+        if self.x == None:
+            self.x = initial
+        self.x += i
+        return self.x
+
+    def __call__(self, i, initial=None):
+        return self.acc(i, initial)
+    
+    def __int__(self):
+        return int(self.x)
+
+    def __str__(self):
+        return str(self.x)
+
+class defaultenv(defaultdict):
+    def __init__(self, factory):
+        defaultdict.__init__(self, factory)
+
+    def __getattr__(self, x):
+        return self[x]
+    
+def sub_by_popen(pat, cmd, str, acc):
+    ga=defaultenv(acctype)
+    env = dict(n=null, popen=popen, p=popen, r=read, w=write, ga=ga)
     def popen_maybe(cmd, env):
         if cmd.startswith(':'):
             return sub2(cmd[1:], env)
         else:
             return popen(sub2(cmd, env))
-    return re.sub(pat, lambda m: popen_maybe(cmd, dict_updated(m.groupdict(), **env)).strip(), str, flags=re.M|re.S)
+    if pat.find('^^') != -1 or pat.find('$$') != -1:
+        flags = re.S
+    else:
+        flags = re.M|re.S
+    sys.stderr.write('sub_by_popen:%s\n'%dict(pat=pat, cmd=cmd))
+    repl_output = re.sub(pat, lambda m: popen_maybe(cmd, dict_updated(m.groupdict(), **env)).strip(), str, flags=flags)
+    acc_output = '\n'.join([popen_maybe(i, env) for i in acc])
+    return repl_output + acc_output
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.stderr.write(__doc__)
         sys.exit(1)
-    cmd, pat = parse_arg(sys.argv[1:])
-    print sub_by_popen(pat, cmd, sys.stdin.read())
+    cmd, pat, acc = parse_arg(sys.argv[1:])
+    print sub_by_popen(pat, cmd, sys.stdin.read(), acc)
