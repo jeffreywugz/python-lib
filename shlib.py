@@ -8,6 +8,11 @@ from collections import OrderedDict
 from shutil import rmtree
 import fcntl
 
+def parse_cmd_args(args):
+    list_args = [i for i in args if not re.match('\w+=', i)]
+    kw_args = dict(i.split('=', 1) for i in args if re.match('\w+=', i))
+    return list_args, kw_args
+
 def shell(cmd):
     ret = subprocess.call(cmd, shell=True)
     sys.stdout.flush()
