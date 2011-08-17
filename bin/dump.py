@@ -16,12 +16,11 @@ Usages:
 '''
 import sys, os
 app_dir = os.path.dirname(os.path.abspath(__file__))
-lib_paths = ['mako.zip', '../lib/mako.zip', 'yaml.zip', '../lib/yaml.zip']
+lib_paths = ['yaml.zip', '../lib/yaml.zip']
 sys.path.extend([os.path.join(app_dir, path) for path in lib_paths])
 import re
 import copy
 from subprocess import Popen, PIPE, STDOUT
-from mako.template import Template
 import yaml
 from itertools import groupby 
 
@@ -29,8 +28,8 @@ def usages():
     sys.stderr.write(__doc__)
     sys.exit(1)
 
-def popen(cmd):
-    return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+def dict_map(func, d):
+    return dict((k, func(v)) for (k,v) in list(d.items()))
 
 def dict_updated(d, **kw):
     new_dict = copy.copy(d)
@@ -40,7 +39,9 @@ def dict_updated(d, **kw):
 def make_smart_eval_constructor(**env):
     def sub(tpl, **vars):
         return Template(tpl).render(**dict_updated(env, **vars))
-    env.update(sub=sub)
+    def popen(cmd):
+        return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0].strip()
+    env.update(sub=sub, popen=popen)
     def smart_eval(loader, obj):
         value = obj.value
         if not value: return None
@@ -131,13 +132,30 @@ def dump_yaml_obj(obj):
         return obj
     else:
         return yaml.dump(obj)
-    
+
+def sub2(_str, env=globals(), __safe__=False, **kw):
+    """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
+    def shell_escape(str):
+        return re.sub('`(.*?)`', lambda m: "${popen('%s')}"% m.group(1).replace("'", '\''), str)
+    def pipe_eval(ps, env):
+        return reduce(lambda x,y: y(x), [eval(p, env) for p in ps.split('|>')])
+    def handle_repl(m):
+        def remove_brace(x):
+            return re.sub('^{(.*)}$', r'\1', x or '')
+        try:
+            expr = remove_brace(m.group(1)) or remove_brace(m.group(2))
+            return str(pipe_eval(expr, dict_updated(env, kw)))
+        except Exception, e:
+            if not __safe__: raise e
+            return '$%s'%(m.group(1) or m.group(2))
+    return re.sub('(?s)\$([a-zA-Z0-9_.]+)|\$({.+?})', handle_repl, shell_escape(_str))
+
 def dump(term, inline, **kw):
-    tpl, env = load(term, 'tpl'), env2dict(load(inline, 'config'))
-    return (not tpl) and dump_yaml_obj(env) or Template(text=tpl).render(**dict_updated(env, **kw))
+    tpl, env = load(term, 'tpl'), dict_map(dict2env, load(inline, 'config'))
+    return (not tpl) and dump_yaml_obj(env) or sub2(tpl, dict_updated(env, **kw))
 
 if __name__ == '__main__':
-    yaml.add_constructor('!e', make_smart_eval_constructor(popen=popen, load=load))
+    yaml.add_constructor('!e', make_smart_eval_constructor(load=load))
     term, inline, attrs = parse_arg(sys.argv[1:])
     inline or usages()
     print dump(term, inline, **attrs)
