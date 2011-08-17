@@ -8,6 +8,7 @@ Examples:
   find . -name '*.cpp' -o -name '*.h' |p set-header.py '$t'
   cat cmds |p 'ssh $host $cmd' pat='$host:${cmd:.*}'
   ls *.py |p :'${ga.i(1)} $t'
+  ls *.cpp *.h |p cat '$t' '|p' :'`cat header`' pat='^^\S*/\*.*?\*/' author=ans42 file='$t'
 """
 import sys
 import exceptions
@@ -71,12 +72,9 @@ def sub2x(template, env={}, **kw):
     return cur
 
 def parse_cmd_args(args):
-    def parse_arg(arg):
-        if re.match('\w+=', arg): return arg.split('=', 1)
-        else: return (arg.strip(),)
-    args = list(map(parse_arg, args))
-    args = [(k, list(iters)) for k,iters in groupby(sorted(args, key=len), key=len)]
-    return [i[0] for i in dict(args).get(1, [])], dict(dict(args).get(2, []))
+    list_args = [i for i in args if not re.match('\w+=', i)]
+    kw_args = dict(i.split('=', 1) for i in args if re.match('\w+=', i))
+    return list_args, kw_args
 
 def parse_arg(args):
     def normalize(str):
