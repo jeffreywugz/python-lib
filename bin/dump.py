@@ -20,6 +20,7 @@ lib_paths = ['mako.zip', '../lib/mako.zip', 'yaml.zip', '../lib/yaml.zip']
 sys.path.extend([os.path.join(app_dir, path) for path in lib_paths])
 import re
 import copy
+from subprocess import Popen, PIPE, STDOUT
 from mako.template import Template
 import yaml
 from itertools import groupby 
@@ -27,6 +28,40 @@ from itertools import groupby
 def usages():
     sys.stderr.write(__doc__)
     sys.exit(1)
+
+def popen(cmd):
+    return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+
+def dict_updated(d, **kw):
+    new_dict = copy.copy(d)
+    new_dict.update(**kw)
+    return new_dict
+
+def make_smart_eval_constructor(**env):
+    def sub(tpl, **vars):
+        return Template(tpl).render(**dict_updated(env, **vars))
+    env.update(sub=sub)
+    def smart_eval(loader, obj):
+        value = obj.value
+        if not value: return None
+        if type(value) == str or type(value) == unicode:
+            if len(value.split('\n')) > 1:
+                exec value in env
+                return None
+            else:
+                return eval(value, env)
+        elif type(value) == list:
+            value = [i.value for i in value]
+            func = value[0]
+            if type(func) == str or type(func) == unicode: func = eval(func, env)
+            return func(*value[1:])
+        elif type(value) == dict:
+            value = dict((k,v.value) for k,v in value.items())
+            func = value['__func__']
+            if type(func) == str or type(func) == unicode: func = eval(func, env)
+            del value['__func__']
+            return func(**value)
+    return smart_eval
     
 class Env(dict):
     def __init__(self, d={}):
@@ -88,7 +123,7 @@ def load_yaml_obj(path, default):
     yaml_obj = dict2env(yaml.load(safe_read((yaml_path or default) + '.yml')))
     return find_attr(yaml_obj, path[len(yaml_path):]) or {}
 
-def load(path, default):
+def load(path, default=''):
     return safe_read(path) or load_yaml_obj(path, default)
 
 def dump_yaml_obj(obj):
@@ -98,10 +133,11 @@ def dump_yaml_obj(obj):
         return yaml.dump(obj)
     
 def dump(term, inline, **kw):
-    tpl, env = load(term, 'tpl'), load(inline, 'config')
-    return (not tpl) and dump_yaml_obj(env2dict(env)) or Template(text=tpl).render(**dict_updated(env, **kw))
+    tpl, env = load(term, 'tpl'), env2dict(load(inline, 'config'))
+    return (not tpl) and dump_yaml_obj(env) or Template(text=tpl).render(**dict_updated(env, **kw))
 
 if __name__ == '__main__':
+    yaml.add_constructor('!e', make_smart_eval_constructor(popen=popen, load=load))
     term, inline, attrs = parse_arg(sys.argv[1:])
     inline or usages()
     print dump(term, inline, **attrs)
