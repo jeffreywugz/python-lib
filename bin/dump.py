@@ -91,9 +91,15 @@ def load_yaml_obj(path, default):
 def load(path, default):
     return safe_read(path) or load_yaml_obj(path, default)
 
+def dump_yaml_obj(obj):
+    if type(obj) == str:
+        return obj
+    else:
+        return yaml.dump(obj)
+    
 def dump(term, inline, **kw):
     tpl, env = load(term, 'tpl'), load(inline, 'config')
-    return (not tpl) and yaml.dump(env2dict(env)) or Template(text=tpl).render(**dict_updated(env, **kw))
+    return (not tpl) and dump_yaml_obj(env2dict(env)) or Template(text=tpl).render(**dict_updated(env, **kw))
 
 if __name__ == '__main__':
     term, inline, attrs = parse_arg(sys.argv[1:])
