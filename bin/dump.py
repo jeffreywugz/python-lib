@@ -23,6 +23,7 @@ import copy
 from subprocess import Popen, PIPE, STDOUT
 import yaml
 from itertools import groupby 
+import types
 
 def usages():
     sys.stderr.write(__doc__)
@@ -36,14 +37,49 @@ def dict_updated(d, **kw):
     new_dict.update(**kw)
     return new_dict
 
+def dict_match(d, **pat):
+    return all(d.get(k) == v for k,v in pat.items())
+
+def attrs_decorate(**match_spec):
+    def make_attrs_updater(attrs_generator):
+        def attrs_updater(**kw):
+            if dict_match(kw, **match_spec):
+                return dict_updated(kw, **attrs_generator(**kw))
+            else:
+                return {}
+        return attrs_updater
+    return make_attrs_updater
+        
+def sub2(_str, env=globals(), __safe__=False, **kw):
+    """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
+    def shell_escape(str):
+        return re.sub('`(.*?)`', lambda m: "${popen('%s')}"% m.group(1).replace("'", '\''), str)
+    def pipe_eval(ps, env):
+        return reduce(lambda x,y: y(x), [eval(p, env) for p in ps.split('|>')])
+    def handle_repl(m):
+        def remove_brace(x):
+            return re.sub('^{(.*)}$', r'\1', x or '')
+        try:
+            expr = remove_brace(m.group(1)) or remove_brace(m.group(2))
+            return str(pipe_eval(expr, dict_updated(env, kw)))
+        except Exception, e:
+            if not __safe__: raise e
+            return '$%s'%(m.group(1) or m.group(2))
+    return re.sub('(?s)\$([a-zA-Z0-9_.]+)|\$({.+?})', handle_repl, shell_escape(_str))
+
 def make_smart_eval_constructor(**env):
     def sub(tpl, **vars):
-        return Template(tpl).render(**dict_updated(env, **vars))
+        return sub2(tpl, **dict_map(dict2env, vars))
     def popen(cmd):
         return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0].strip()
-    env.update(sub=sub, popen=popen)
+    env.update(dict2env=dict2env, sub=sub, popen=popen, dict_updated=dict_updated, attrs_decorate=attrs_decorate)
     def smart_eval(loader, obj):
-        value = obj.value
+        if isinstance(obj, yaml.nodes.MappingNode):
+            value = loader.construct_mapping(obj)
+        elif isinstance(obj, yaml.nodes.SequenceNode):
+            value = loader.construct_sequence(obj)
+        else:
+            value = obj.value
         if not value: return None
         if type(value) == str or type(value) == unicode:
             if len(value.split('\n')) > 1:
@@ -52,16 +88,18 @@ def make_smart_eval_constructor(**env):
             else:
                 return eval(value, env)
         elif type(value) == list:
-            value = [i.value for i in value]
-            func = value[0]
+            _value = [i for i in value]
+            func = _value[0]
             if type(func) == str or type(func) == unicode: func = eval(func, env)
-            return func(*value[1:])
+            return func(*_value[1:])
         elif type(value) == dict:
-            value = dict((k,v.value) for k,v in value.items())
-            func = value['__func__']
+            _value = dict((k, v) for k,v in value.items())
+            func = _value['__func__']
             if type(func) == str or type(func) == unicode: func = eval(func, env)
-            del value['__func__']
-            return func(**value)
+            del _value['__func__']
+            return func(**_value)
+        else:
+            return value
     return smart_eval
     
 class Env(dict):
@@ -133,26 +171,14 @@ def dump_yaml_obj(obj):
     else:
         return yaml.dump(obj)
 
-def sub2(_str, env=globals(), __safe__=False, **kw):
-    """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
-    def shell_escape(str):
-        return re.sub('`(.*?)`', lambda m: "${popen('%s')}"% m.group(1).replace("'", '\''), str)
-    def pipe_eval(ps, env):
-        return reduce(lambda x,y: y(x), [eval(p, env) for p in ps.split('|>')])
-    def handle_repl(m):
-        def remove_brace(x):
-            return re.sub('^{(.*)}$', r'\1', x or '')
-        try:
-            expr = remove_brace(m.group(1)) or remove_brace(m.group(2))
-            return str(pipe_eval(expr, dict_updated(env, kw)))
-        except Exception, e:
-            if not __safe__: raise e
-            return '$%s'%(m.group(1) or m.group(2))
-    return re.sub('(?s)\$([a-zA-Z0-9_.]+)|\$({.+?})', handle_repl, shell_escape(_str))
-
 def dump(term, inline, **kw):
-    tpl, env = load(term, 'tpl'), dict_map(dict2env, load(inline, 'config'))
-    return (not tpl) and dump_yaml_obj(env) or sub2(tpl, dict_updated(env, **kw))
+    tpl, env = load(term, 'tpl'), env2dict(load(inline, 'config'))
+    if tpl:
+        if type(env) != dict or (type(tpl) != str and type(tpl) != unicode):
+            raise Exception('type error: tpl is not str/unicode %s, env is not dict: %s'%(repr(tpl), repr(env)))
+        return sub2(tpl, dict_updated(dict_map(dict2env, env), **kw))
+    else:
+        return dump_yaml_obj(env)
 
 if __name__ == '__main__':
     yaml.add_constructor('!e', make_smart_eval_constructor(load=load))
