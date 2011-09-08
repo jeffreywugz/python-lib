@@ -40,16 +40,14 @@ def dict_updated(d, **kw):
 def dict_match(d, **pat):
     return all(d.get(k) == v for k,v in pat.items())
 
-def attrs_decorate(**match_spec):
-    def make_attrs_updater(attrs_generator):
-        def attrs_updater(**kw):
-            if dict_match(kw, **match_spec):
-                return dict_updated(kw, **attrs_generator(**kw))
-            else:
-                return {}
-        return attrs_updater
-    return make_attrs_updater
-        
+def attrs_updater(attrs_generator):
+    def updater(**kw):
+        return dict_updated(kw, **attrs_generator(**kw))
+    return updater
+
+def li(format='%s', sep=' '):
+    return lambda seq: sep.join([format% i for i in seq])
+
 def sub2(_str, env=globals(), __safe__=False, **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
     def shell_escape(str):
@@ -65,14 +63,17 @@ def sub2(_str, env=globals(), __safe__=False, **kw):
         except Exception, e:
             if not __safe__: raise e
             return '$%s'%(m.group(1) or m.group(2))
-    return re.sub('(?s)\$([a-zA-Z0-9_.]+)|\$({.+?})', handle_repl, shell_escape(_str))
+    return re.sub('(?s)(?<![$])\$(\w+)|\$({.+?})', handle_repl, shell_escape(_str)).replace('$$', '$')
 
 def make_smart_eval_constructor(**env):
     def sub(tpl, **vars):
         return sub2(tpl, **dict_map(dict2env, vars))
+    @attrs_updater
+    def tpl_sub(_prefix='tpl_', **kw):
+        return dict((k[len(_prefix):], sub(v, **kw)) for k,v in kw.items() if k.startswith(_prefix))
     def popen(cmd):
         return Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0].strip()
-    env.update(dict2env=dict2env, sub=sub, popen=popen, dict_updated=dict_updated, attrs_decorate=attrs_decorate)
+    env.update(li=li, dict2env=dict2env, sub=sub, popen=popen, dict_updated=dict_updated, tpl_sub=tpl_sub)
     def smart_eval(loader, obj):
         if isinstance(obj, yaml.nodes.MappingNode):
             value = loader.construct_mapping(obj)
@@ -176,7 +177,7 @@ def dump(term, inline, **kw):
     if tpl:
         if type(env) != dict or (type(tpl) != str and type(tpl) != unicode):
             raise Exception('type error: tpl is not str/unicode %s, env is not dict: %s'%(repr(tpl), repr(env)))
-        return sub2(tpl, dict_updated(dict_map(dict2env, env), **kw))
+        return sub2(tpl, **dict_updated(dict_map(dict2env, env), **kw))
     else:
         return dump_yaml_obj(env)
 
