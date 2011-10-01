@@ -5,12 +5,12 @@ import exceptions
 from common import *
 import traceback
 
-class DFExp(exceptions.Exception):
+class DFException(exceptions.Exception):
     def __init__(self, msg, obj):
         self.msg, self.obj = msg, obj
     
     def __str__(self):
-        return "DFExp(%s, %s)"%(repr(self.msg), repr(self.obj))
+        return "DFException(%s, %s)"%(repr(self.msg), repr(self.obj))
 
 def _print(msg):
     print msg
@@ -26,7 +26,7 @@ class DF(object):
         self.info = info
 
     def reg(self, f):
-        if not callable(f): raise DFExp('object is not callable',  f)
+        if not callable(f): raise DFException('object is not callable',  f)
         self.fs.append(f)
         return self
 
