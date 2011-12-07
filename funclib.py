@@ -68,7 +68,7 @@ def counter(d, x):
     if not d.has_key(x): d[x] = 0
     d[x] += 1
     return d[x]
-    
+
 def identity(x):
     return x
 
@@ -110,7 +110,7 @@ def flip(func):
 def list_get(li, idx, default=None):
     if len(li) > idx: return li[idx]
     else: return default
-    
+
 def list_flatten(li):
     if type(li) == list or type(li) == tuple:
         return reduce(lambda x,y:x+y, list(map(list_flatten, li)), [])
@@ -125,7 +125,7 @@ def step_in(i, steps):
 def uniq(seq):
     d = {}
     return filter(lambda x: counter(d, x) == 1, seq)
-           
+
 # def list_sum(lists):
 #     result = []
 #     for list in lists:
@@ -156,7 +156,7 @@ def dict_match(d, **pat):
 
 def dict_rematch(d, **pat):
     return all([re.match(v, d.get(k, '')) for(k,v) in pat.items()])
-    
+
 def dict_slice(d, *keys):
     return [d.get(x) for x in keys]
 
@@ -171,7 +171,7 @@ def dict_trans(_d, **kw):
         if callable(v): return v(**_d)
         else: return _d
     return dict_map(lambda v: call_or_not(v, _d), kw)
-    
+
 def dict_updated(d, extra={}, **kw):
     new_dict = copy.copy(d)
     new_dict.update(extra, **kw)
@@ -192,7 +192,7 @@ def dc_map(func, *args):
     return [func(*x) for x in list]
 
 def transpose(matrix):
-    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object 
+    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object
     for row in matrix:
         map(lambda col,i: col.append(i), cols, row)
     return cols
@@ -201,7 +201,7 @@ KEY, PREV, NEXT = range(3)
 class OrderedSet(collections.MutableSet):
 
     def __init__(self, iterable=None):
-        self.end = end = [] 
+        self.end = end = []
         end += [None, end, end]         # sentinel node for doubly linked list
         self.map = {}                   # key --> [key, prev, next]
         if iterable is not None:
@@ -220,7 +220,7 @@ class OrderedSet(collections.MutableSet):
             curr[NEXT] = end[PREV] = self.map[key] = [key, curr, end]
 
     def discard(self, key):
-        if key in self.map:        
+        if key in self.map:
             key, prev, next = self.map.pop(key)
             prev[NEXT] = next
             next[PREV] = prev

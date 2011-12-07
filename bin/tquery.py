@@ -18,7 +18,6 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from glob import glob
-
 class QueryErr(Exception):
     def __init__(self, msg, obj=None):
         Exception(self)
@@ -28,7 +27,7 @@ class QueryErr(Exception):
         return "Query Exception: %s\n%s"%(self.msg, self.obj)
 
 def transpose(matrix):
-    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object 
+    cols = [[] for i in matrix[0]] # Note: You can not write cols = [[]] * len(matrix[0]); if so, all col in cols will ref to same list object
     for row in matrix:
         map(lambda col,i: col.append(i), cols, row)
     return cols
@@ -38,7 +37,7 @@ def safe_int(x, default=0):
         return int(x)
     except ValueError:
         return default
-    
+
 def list_slices(seq, *slices):
     return [seq[i] for i in slices]
 
@@ -60,14 +59,14 @@ def str2dict(template, str):
     match = re.match(rexp, str)
     if not match: return {}
     else: return dict(match.groupdict(), __self__=str)
-    
+
 def table_load(path):
     lines = [line.split() for line in readlines(path)]
     return lines[0], lines[1:]
 
 def matrix_map(f, mat):
     return [map(f, row) for row in mat]
-    
+
 def table_query(path, *cols):
     header, data = table_load(path)
     if not cols: cols = header
@@ -81,7 +80,7 @@ class KVTable:
 
     def create_table(self):
         self.conn.execute('create table if not exists %s(k text,v text,primary key (k))'%(self.table))
-        
+
     def get(self, k):
         self.create_table()
         v = list(self.conn.execute('select v from %s where k=?'%(self.table), (k,)))
@@ -104,7 +103,7 @@ def get_schema(spec, default_type='float'):
 
 def create_db_schema(names, types):
     return ','.join(map(lambda name,type: '%s %s'%(name, type), names, types))
-    
+
 def dump2db(conn, table, collector, default_type='float'):
     if not re.match('^\w+$', table): raise Exception('ill formed table name: %s'% table)
     def safe_float(x):
@@ -126,7 +125,7 @@ def dump2db(conn, table, collector, default_type='float'):
     data = [map(lambda type, cell: type_convertor[type](cell), types, row) for row in data]
     conn.execute('create table if not exists %s(%s)'%(table, create_db_schema(names, types)))
     conn.executemany('insert or replace into %s(%s) values(%s)'%(table, ','.join(names), ','.join(['?']*len(names))), data)
-    
+
     meta.set(table, 'done')
     conn.commit()
     return conn
@@ -194,7 +193,7 @@ def make_plot_func(func):
         spec, cols = cols[0][-1], cols[1:]
         path, args = parse_matplot_spec(spec)
         plt.figure()
-        cols = [map(float, col) for col in cols]
+        #cols = [map(float, col) for col in cols]
         func(args, *cols)
         if (not path) or path == '-':
             plt.show()
@@ -209,12 +208,15 @@ def make_sqlite_plot_func(func):
 def plot(args, x, y=None):
     if y == None:
         plt.plot(x, args)
+    elif type(x[0]) == unicode or type(x[0]) == str:
+        plt.xticks(np.arange(len(x)), x, rotation='-15')
+        plt.plot(y)
     else:
         plt.plot(x, y, args)
 
 def hist(args, x):
     plt.hist(x, bins=safe_int(args,10))
-    
+
 def scatter(args, x, y):
     hist2d = np.histogram2d(y, x, bins=safe_int(args,10))[0]
     plt.imshow(hist2d)
@@ -234,7 +236,7 @@ def bar(args, *x):
     groupX = np.array(range(len(x[0])))
     for i,col in enumerate(x):
         plt.bar(groupX+i*w, col, w, color=colors[i%len(colors)])
-    
+
 SqlitePlot = make_sqlite_plot_func(plot)
 SqliteHist = make_sqlite_plot_func(hist)
 SqliteScatter = make_sqlite_plot_func(scatter)
