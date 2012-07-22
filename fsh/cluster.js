@@ -1,4 +1,4 @@
-var _clusterJob = 'job.py {usr}:{passwd}@{hosts}:{dir} {cmd} -/';
+var _clusterJob = 'echo job.py {usr}:{passwd}@{hosts}:{dir} {cmd} -/';
 var clusterJob = {
     usr:'ans42', passwd:'a', hosts: 'hosts', dir:'base', action: 'bg',
     args: ' *(?:(?:(hosts=[^: ]*):)?(dir=[^# ]*)#)?(cmd=.*)',

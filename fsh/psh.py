@@ -32,7 +32,7 @@ def popen(path, cmd):
     if p.returncode != 0:
         raise PshException('%s\n%s'%(err, out), cmd)
     return out
-    
+
 def get(path, *args):
     try:
         with open(path, 'r') as f:
@@ -40,7 +40,7 @@ def get(path, *args):
     except exceptions.Exception,e:
         print e
         return ''
-    
+
 def set(path, content):
     with open(path, 'w') as f:
         f.write(content)
@@ -49,6 +49,7 @@ def echo(path, arg):
     return arg
 
 def psh(func, path, content):
+    print 'func:%s, path=%s, content=%s'%(func, path, content)
     result, tb = None, None
     try:
         result = eval(func)(path, content)
@@ -60,7 +61,7 @@ def psh(func, path, content):
 def rpc_encode(result, tb):
     if tb: return 'Exception:\n%s' % (tb)
     else: return 'OK:\n%s' %(result)
-    
+
 def get_mime_type(path):
     return mimetypes.guess_type(path)[0] or 'text/plain'
 
@@ -106,7 +107,7 @@ def first_arg(query, key):
     args = query.get(key, [])
     if args: return args[0]
     else: return None
-    
+
 def psh_cgi_handler(post, query):
     path = first_arg(query, 'path') or '/tmp/scrath'
     method = first_arg(query, 'method') or 'get'
@@ -134,11 +135,11 @@ def make_wsgi_app(app):
         response(*header)
         return content
     return wsgi_app
-            
+
 def make_wsgi_server(app, port=8000):
     from wsgiref.simple_server import make_server
     return make_server('', port, app)
-    
+
 if __name__ == '__main__':
     app = make_wsgi_app(psh_app)
     if len(sys.argv) == 1:
