@@ -94,9 +94,10 @@ def file_handler(path, *args):
     return serve_file(path)
 
 def fsh_handler(path, post, query):
-    match = re.match('^(.*)/fsh/([^/]*)$', path)
+    match = re.match('^(.*)\$(.*)$', path)
     if not match: return None
     path, method = match.groups()
+    print 'fsh_handler(path=%s, method=%s)'%(path, method)
     path = path or '/tmp/scrath'
     method = method or 'fsh.html'
     response =  serve_file(os.path.join(my_fsh_dir, method))

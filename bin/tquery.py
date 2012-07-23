@@ -15,7 +15,7 @@ import re
 import sqlite3
 import numpy as np
 import matplotlib
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from glob import glob
 class QueryErr(Exception):
@@ -278,13 +278,15 @@ def get_db(path, **collectors):
 def txt_db(pat,default_type='float'):
     glob_pat, keys = re.sub('\$\w+', '*', pat), re.findall('\$(\w+)', pat)
     scheme = filter(lambda (p,d): d, [(p, str2dict(pat, p)) for p in glob(glob_pat)])
+    # for path, cols in scheme:
+    #     print path, cols
     def make_table_loader(p):
         def loader():
             return table_load(p)
         return loader
-    collectors = [('_'.join(dict_slice(d, *keys)) or '_table', make_table_loader(p)) for p,d in scheme]
+    collectors = [('t_'+'_'.join(dict_slice(d, *keys)) or '_table', make_table_loader(p)) for p,d in scheme]
     def tables():
-        return ['%s:str'%(k) for k in keys], [dict_slice(d, *keys) for p,d in scheme]
+        return ['%s:str'%(k) for k in keys] + ['table_name:str'], [dict_slice(d, *keys) + ['t_' + '_'.join(dict_slice(d, *keys))] for p,d in scheme]
     if keys: collectors.append(('tables', tables))
     conn = get_db(pat+'.db', **dict(collectors))
     return conn
@@ -299,5 +301,7 @@ if __name__ == '__main__':
         print __doc__
         sys.exit()
     sys.stderr.write('%s\n'%sql)
-    for cols in txt_db(pat).execute(sql):
+    result = list(txt_db(pat).execute(sql))
+    result = [result[0].keys()] + result
+    for cols in result:
         print '\t'.join(map(str, cols))

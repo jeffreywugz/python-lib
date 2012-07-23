@@ -17,7 +17,7 @@ function rpcDecode(str){
 
 var rpc_path;
 var query_path = getQueryArgs()['path'] || '';
-function rpc_init(){ rpc_path = getUrl().search(/fsh\.html$/) == -1? function(x){return x;}: function(x){return 'psh.cgi?' + encodeQueryString({path:query_path, method:x}) + '&';} }
+function rpc_init(){ rpc_path = getUrl().search(/fsh\.html$/) == -1? function(x){return getUrl().replace(/\$.*$/, '') + '$' + x;}: function(x){return 'psh.cgi?' + encodeQueryString({path:query_path, method:x}) + '&';} }
 function get(){return rpcDecode(http(rpc_path('get'))); }
 function set(content){ return rpcDecode(http(rpc_path('set'), content)); }
 function popen(cmd) {return rpcDecode(http(rpc_path('popen'), cmd)); }
