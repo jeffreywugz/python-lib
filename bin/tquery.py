@@ -6,8 +6,23 @@ Usage: ./tquery.py <pat> <sql>
 where <pat> will be used to:
  - indicate text file paths and database table names
  - specify database path
+Sepcial Tables:
+ - table0: list all table and their create schema
+ - sqlite_master: has scheme
+Aggregate Function and Other Extension:
+ - select * from order by key1 alphanum
+ - wavg(weight, qty)
+ - std(qty)
+ - corrcoef(x, y)
+ - correlate(x, y)
+ - auto_correlate(x)
+ - plot('file.png,r+', x, y) or plot(file.png,r+', y)
+ - hist(n_bins, x)
+ - corr(maxlags, x, y)
+ - scatter(n_bins, x, y)
+ - bar(x1,x2,x3...)
 Examples:
-vmstat 1 5|sed '1d'|sed 's/in/intr/' >vmstat.log && tquery.py vmstat.log 'select plot("-,+", rowid, intr) from _table'
+vmstat 1 5|sed '1d'|sed 's/in/intr/' >vmstat.log && tquery.py vmstat.log 'select plot("a.png,+", rowid, intr) from t_'
 '''
 
 import sys, os, os.path
@@ -284,7 +299,7 @@ def txt_db(pat,default_type='float'):
         def loader():
             return table_load(p)
         return loader
-    collectors = [('t_'+'_'.join(dict_slice(d, *keys)) or '_table', make_table_loader(p)) for p,d in scheme]
+    collectors = [('t_'+'_'.join(dict_slice(d, *keys)), make_table_loader(p)) for p,d in scheme]
     def tables():
         return ['%s:str'%(k) for k in keys] + ['table_name:str'], [dict_slice(d, *keys) + ['t_' + '_'.join(dict_slice(d, *keys))] for p,d in scheme]
     if keys: collectors.append(('tables', tables))

@@ -1,0 +1,36 @@
+#!/bin/env python2
+'''
+Expand to multiple cmds and execute one by one
+Usages:
+ m echo [ {1..3} ]
+ m ssh  [ hostname{1,2,3} ] [ uptime date ]
+'''
+import sys
+from subprocess import Popen
+from itertools import product
+
+def cmd_iter(argv):
+    last_stat, cur_list = '', []
+    for x in argv:
+        if last_stat == '[':
+            if x == ']': last_stat = ''; yield cur_list
+            else: cur_list.append(x)
+        else:
+            if x == '[':
+                last_stat, cur_list = '[', []
+            else:
+                yield [x]
+            
+def expand_multi_cmd(argv):
+    return product(*list(cmd_iter(argv)))
+
+def sh(argv, cwd=None, timeout=-1):
+    return Popen(argv, cwd=cwd).wait()
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print __doc__
+        sys.exit(1)
+    for cmd in expand_multi_cmd(sys.argv[1:]):
+        print '# %s' % (' '.join(cmd))
+        sh(cmd)
