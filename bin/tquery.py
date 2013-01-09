@@ -6,6 +6,7 @@ Usage: ./tquery.py <pat> <sql>
 where <pat> will be used to:
  - indicate text file paths and database table names
  - specify database path
+ - examples: $host-$ip.txt
 Sepcial Tables:
  - table0: list all table and their create schema
  - sqlite_master: has scheme
@@ -16,8 +17,8 @@ Aggregate Function and Other Extension:
  - corrcoef(x, y)
  - correlate(x, y)
  - auto_correlate(x)
- - plot('file.png,r+', x, y) or plot(file.png,r+', y)
- - hist(n_bins, x)
+ - plot("file.png,r+", x, y) or plot("file.png,r+", y) #  `"'
+ - hist("file.png,n_bins", x)
  - corr(maxlags, x, y)
  - scatter(n_bins, x, y)
  - bar(x1,x2,x3...)
@@ -113,7 +114,7 @@ def get_schema(spec, default_type='float'):
     try:
         db_types = [type_map[t] for t in types]
     except Exception,e:
-        raise QueryErr('no such type', types)
+        raise QueryErr('no such type[%s]'%(spec), types)
     return names, db_types
 
 def create_db_schema(names, types):
@@ -190,11 +191,19 @@ def correlate(x, y):
 def auto_correlate(x):
     return np.mean(np.correlate(x, x))
 
+def first(x):
+    return x[0]
+
+def last(x):
+    return x[-1]
+
 SqliteStd = make_sqlite_agg_class(lambda data:np.std(transpose(data)[0]))
 SqliteCorrelate = make_sqlite_agg_class(lambda data:correlate(*transpose(data)))
 SqliteAutoCorrelate = make_sqlite_agg_class(lambda data:auto_correlate(transpose(data)[0]))
 SqliteCorrcoef = make_sqlite_agg_class(lambda data:np.corrcoef(*transpose(data))[0][1])
 SqliteWeightedAvg = make_sqlite_agg_class(lambda data:weighted_avg(*transpose(data)))
+SqliteFirst = make_sqlite_agg_class(lambda data:first(*transpose(data)))
+SqliteLast = make_sqlite_agg_class(lambda data:last(*transpose(data)))
 
 def make_plot_func(func):
     def parse_matplot_spec(spec):
@@ -222,12 +231,13 @@ def make_sqlite_plot_func(func):
 
 def plot(args, x, y=None):
     if y == None:
-        plt.plot(x, args)
+        plt.plot(x, args, label="avg=%f"% (np.mean(x)))
     elif type(x[0]) == unicode or type(x[0]) == str:
         plt.xticks(np.arange(len(x)), x, rotation='-15')
-        plt.plot(y)
+        plt.plot(y, label="avg=%f"% (np.mean(y)))
     else:
-        plt.plot(x, y, args)
+        plt.plot(x, y, args, label="avg=%f"% (np.mean(y)))
+    plt.legend()
 
 def hist(args, x):
     plt.hist(x, bins=safe_int(args,10))
@@ -280,6 +290,8 @@ def get_db(path, **collectors):
     conn.create_aggregate("corrcoef", 2, SqliteCorrcoef)
     conn.create_aggregate("correlate", 2, SqliteCorrelate)
     conn.create_aggregate("auto_correlate", 1, SqliteAutoCorrelate)
+    conn.create_aggregate("first", 1, SqliteFirst)
+    conn.create_aggregate("last", 1, SqliteLast)
     conn.create_aggregate("plot", 2, SqlitePlot)
     conn.create_aggregate("plot", 3, SqlitePlot)
     conn.create_aggregate("hist", 2, SqliteHist)
@@ -317,6 +329,9 @@ if __name__ == '__main__':
         sys.exit()
     sys.stderr.write('%s\n'%sql)
     result = list(txt_db(pat).execute(sql))
-    result = [result[0].keys()] + result
-    for cols in result:
-        print '\t'.join(map(str, cols))
+    if len(result) <= 0:
+        print ' empty set.'
+    else:
+        result = [result[0].keys()] + result
+        for cols in result:
+            print '\t'.join(map(str, cols))

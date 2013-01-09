@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <title>Fish Help</title>
+    <link rel="stylesheet" type="text/css" href="$fsh.css"/>
+  </head>
+  <body onload="">
+    <h1>Help for Fish</h1>
+
+    <h2>Start Http Server</h2>
+    <h3>StandAlone</h3>
+    <pre class="output">
+      ./psh.py 8001 # listen on port 8001
+      nohup ./psh.py 8001 2>&1 >psh.log &
+    </pre>
+    <h3>As CGI bin</h3>
+    <pre class="output">
+      psh.py can also be run as CGI script
+    </pre>
+
+    <h2>Common URL</h2>
+    <pre class="output">
+    'fish' means FileShell.
+    # add '$' to the end of your txt file path to view it as file-shell
+    http://host/path-to-your-file$
+    # this page see help
+    http://host/.../xx$help.html
+    </pre>
+
+    <h2>Example File</h2>
+    <pre class="output">
+#init: fsh("date # place init cmd here", get())
+#js: eval(http('cluster.js'))
+#js: bind(tasks, clusterJob)
+#js: bind(tasks, {usr:'yuanqi.xhf', passwd: 'iambook11', hosts:'tfs[040-041],ob[029-043],ob[182-192]'})
+
+######################### Cluster ##################################
+"ls -d /sys/devices/system/cpu/cpu*|grep cpu[0-9]"
+uname -r
+which perf
+hostname
+base# make pkg.unpack
+pgrep postgres
+'ps -eo pid,%cpu,%mem,args --sort -pcpu | head -5'
+date
+vmstat 1 5
+########################### Cluster Raw ############################
+#js: bind(tasks, {action:'raw'})
+make check
+ping '$host' -c 3
+echo '$host'
+
+
+######################## Master ###################################
+#js: tasks.seq = ['{__self__}']
+ps -eo comm,pcpu,pmem |sort -nrk 2,3 |head
+./obctrl.py start
+./obctrl.py kill
+./obctrl.py pid
+./obctrl.py view
+date
+    </pre>
+  </body>
+</html>

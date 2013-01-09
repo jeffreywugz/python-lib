@@ -1,0 +1,29 @@
+#js: eval(http('cluster.js'))
+#js: bind(tasks, clusterJob)
+#js: bind(tasks, {usr:'yuanqi.xhf', passwd: 'iambook11', hosts:'tfs[040-041],ob[029-043],ob[182-192]'})
+
+######################### Cluster ##################################
+"ls -d /sys/devices/system/cpu/cpu*|grep cpu[0-9]"
+uname -r
+which perf
+hostname
+base# make pkg.unpack
+pgrep postgres
+'ps -eo pid,%cpu,%mem,args --sort -pcpu | head -5'
+date
+vmstat 1 5
+########################### Cluster Raw ############################
+#js: bind(tasks, {action:'raw'})
+make check
+ping '$host' -c 3
+echo '$host'
+
+
+######################## Master ###################################
+#js: tasks.seq = ['{__self__}']
+ps -eo comm,pcpu,pmem |sort -nrk 2,3 |head
+./obctrl.py start
+./obctrl.py kill
+./obctrl.py pid
+./obctrl.py view
+date

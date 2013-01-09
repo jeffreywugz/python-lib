@@ -31,7 +31,9 @@
         rpc_init();
         var fsh = fish(popen_wrapper, panel, text_filter, 'Fsh');
         panel.insertBefore(bind($n('a'), {id:'ref'}), $s(panel, 'lish'));
-        fsh('', get());
+        var content = get();
+        fsh('', content);
+        eval(filterLines(content, '#init:').join(';'));
     }
     </script>
   </head>

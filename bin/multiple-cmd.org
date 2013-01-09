@@ -1,0 +1,50 @@
+#+Title: multiple cmd
+针对多个文件或多台机器执行shell命令，可以用for循环，
+但是shell的for循环最主要的问题是语法比较怪异，并且不是后缀形式的，
+修改循环内的命令时，需要移动光标。当然使用for循环最大的好处是比较灵活，该用的时候还是不可取代。
+
+但是对于简单的for循环，要是可以用inline的方式指定迭代的集合就更直观了。
+比如：
+#+begin_example
+echo [ a{1..10} ]
+#+end_example
+就分别执行以下十条命令:
+#+begin_example
+echo a1
+echo a2
+...
+echo a10
+#+end_example
+
+如果要多重循环，这种inline的方式更直观:
+#+begin_example
+ssh [ hosts{1,2,3} ] [ uptime 'sar -n DEV' ]
+#+end_example
+
+当然，这种用法虽然方便，但是把它上升为语法既不合适也不可能。我们可以自己写一个脚本，做上面的转化工作。
+#+begin_src python
+import sys
+from subprocess import Popen
+from itertools import product
+
+def cmd_iter(argv):
+    last_stat, cur_list = '', []
+    for x in argv:
+        if last_stat == '[':
+            if x == ']': last_stat = ''; yield cur_list
+            else: cur_list.append(x)
+        else:
+            if x == '[':
+                last_stat, cur_list = '[', []
+            else:
+                yield [x]
+            
+def expand_multi_cmd(argv):
+    return product(*list(cmd_iter(argv)))
+
+def sh(argv, cwd=None, timeout=-1):
+    return Popen(argv, cwd=cwd).wait()
+
+for cmd in expand_multi_cmd(sys.argv[1:]):
+     sh(cmd)
+#+end_src

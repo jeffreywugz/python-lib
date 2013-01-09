@@ -1,4 +1,10 @@
 #!/usr/bin/env python2
+'''
+# add '$' to the end of your txt file path to view it as file-shell
+http://host/path-to-your-file$
+# this page see help
+http://host/.../xx$help.html
+'''
 
 import os, os.path
 import sys
