@@ -9,7 +9,7 @@ import mmap
 
 def find_all(path, pat):
     with open(path, "r") as f:
-        return re.findall(pat, mmap.mmap(f.fileno(), 0, mmap.MAP_PRIVATE, mmap.PROT_READ))
+        return re.findall(pat, mmap.mmap(f.fileno(), 0, mmap.MAP_PRIVATE, mmap.PROT_READ), re.M)
 def tolist(x):
     if type(x) == list or type(x) == tuple:
         return x

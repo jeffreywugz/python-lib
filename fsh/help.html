@@ -28,7 +28,9 @@
 
     <h2>Example File</h2>
     <pre class="output">
-#init: fsh("date # place init cmd here", get())
+#init: fsh("cat report.html; vfiles.py collected_log/*/*.png # place init cmd here", get())
+#init: hide($s($("fish"), "input"))
+
 #js: eval(http('cluster.js'))
 #js: bind(tasks, clusterJob)
 #js: bind(tasks, {usr:'yuanqi.xhf', passwd: 'iambook11', hosts:'tfs[040-041],ob[029-043],ob[182-192]'})
