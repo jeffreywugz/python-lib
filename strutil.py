@@ -4,6 +4,15 @@ import re, string
 def li(format='%s', sep=' '):
     return lambda seq: sep.join([format% i for i in seq])
 
+def sub_str(_str, env, handler):
+    def handle_repl(m):
+        def remove_brace(x):
+            return re.sub('^{*([^{}]*)}*$', r'\1', x or '')
+        orig_expr = m.group(1) or m.group(2) or m.group(3)
+        expr = remove_brace(orig_expr)
+        return handler(expr, orig_expr, env)
+    return re.sub('(?s)(?<![$])\$(?:(\w+)|({.+?}))|{{(.+?)}}', handle_repl, _str).replace('$$', '$')
+
 def sub2(_str, env=globals(), __safe__=False, **kw):
     """Example: $abc ${abc} ${range(3)|> joiner()} `cat a.txt`"""
     def shell_escape(str):

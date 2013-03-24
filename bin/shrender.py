@@ -13,6 +13,8 @@ from subprocess import Popen,PIPE,STDOUT
 
 def pinfo(msg):
     print '\033[32m#%s\033[0m' %(msg)
+def perror(msg):
+    print '\033[31m%s\033[0m' %(msg)
 
 def wait_child(p, timeout=-1):
     if timeout < 0: return p.wait()
@@ -110,6 +112,7 @@ def li(format='%s', sep=' '):
 
 def add_html_style(row):
     def get_html_style(cell):
+        if not cell: return 'color:red;'
         return "CmdError" in cell and 'color:red;' or 'color:black;'
     return [(get_html_style(cell), cell) for cell in row]
 
@@ -128,9 +131,14 @@ def do_cmd(term, cmd_list, timeout=1):
     elif term == 'text':
         return map(lambda cmd: pinfo(cmd) or (cmd, sh(cmd)), cmd_list)
     elif term == 'qtext':
-        for cmd, output in async_get(async_map(lambda cmd: (cmd, popen(cmd)), cmd_list), timeout):
+        result = async_get(async_map(lambda cmd: popen(cmd), cmd_list), timeout)
+        result = zip(cmd_list, result)
+        for cmd, output in result:
             pinfo(cmd)
-            print output.strip()
+            if type(output) == str and 'CmdError' not in output:
+                print output.strip()
+            else:
+                perror(output)
     elif term == 'html':
         result = async_get(async_map(lambda cmd: popen(cmd), cmd_list), timeout)
         result = zip(cmd_list, result)
@@ -144,4 +152,5 @@ if __name__ == '__main__':
     if term == 'help':
         print __doc__
         sys.exit(1)
-    print do_cmd(term, [line.strip() for line in sys.stdin.readlines()], timeout)
+    ret = do_cmd(term, [line.strip() for line in sys.stdin.readlines()], timeout)
+    #print ret
