@@ -34,11 +34,11 @@ def safe_read_lines(x):
             raw_lines = [line.strip() for line in f.readlines()]
             return [line for line in raw_lines if line and not line.startswith('##')]
     except IOError,e:
-        #print e
+        print e
         return [x]
 
 def expand_file_lines(x):
-    return map(lambda li: ''.join(li), product(*map(safe_read_lines, re.split('(@[_A-Za-z0-9.]+)', x))))
+    return map(lambda li: ''.join(li), product(*map(safe_read_lines, re.split('(@[-_A-Za-z0-9.]+)', x))))
 
 def cmd_iter(argv):
     last_stat, cur_list = '', []
