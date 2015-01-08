@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-  ./ob-review.py sample.post-review
+  ./ob-review.py sample.post-review  --ignore=obfarm -r review_id
 ##### sample.post-review content #####################
 * summary
   [1.0dev newfeature] 新增xxx
@@ -39,30 +39,28 @@ def write(path, content):
 def parse_section(content):
     return dict((k, v.strip()) for k, v in re.findall("^[*] (.+?)\n(.+?)(?=^[*])", content, re.M|re.S))
 
-def prepare_review_cmd(attrs):
-    def build_review_id_opt(review_id):
-        if review_id:
-            return "-r %s"%(review_id)
-        else:
-            return ""
-    review_msg_file = "./review.msg"
+def prepare_review_msg_file(file, attrs):
     review_msg = '''* 描述信息\n  $desc\n* 单元测试情况\n  $test\n'''
-    cmd = '''./ob-review --summary="$summary" --description-file=$review_msg_file --target-groups=oceanbase --target-people=yanran.hfs,yubai.lk,wenliang.zwl --server=http://rb.corp.taobao.com  --ignore=obfarm $file_list $review_id_opt'''
-    attrs.update(review_msg_file=review_msg_file, review_id_opt=build_review_id_opt(attrs.get("review_id", "")))
-    write(review_msg_file, sub(review_msg, attrs))
+    write(file, sub(review_msg, attrs))
+
+def prepare_review_cmd(attrs, extra_args):
+    review_msg_file = "./review.msg"
+    cmd = '''./ob-review --summary="$summary" --description-file=$review_msg_file --target-groups=oceanbase --target-people=yanran.hfs,yubai.lk,wenliang.zwl --server=http://rb.corp.taobao.com  $file_list $extra_args'''
+    attrs.update(review_msg_file=review_msg_file, extra_args=' '.join(extra_args))
+    prepare_review_msg_file(review_msg_file, attrs)
     return sub(cmd, attrs)
 
 def help():
     sys.stderr.write(__doc__)
 
 if __name__ == '__main__':
-    len(sys.argv) == 2 or help() or sys.exit(1)
-    path = sys.argv[1]
+    len(sys.argv) >= 2 or help() or sys.exit(1)
+    path, extra_args = sys.argv[1], sys.argv[2:]
     try:
         content = safe_read(path)
     except IOError as e:
         print "file read error:", e
         sys.exit(1)
     file_attrs = parse_section(content + '\n*')
-    cmd = prepare_review_cmd(file_attrs)
+    cmd = prepare_review_cmd(file_attrs, extra_args)
     print sh(cmd)
